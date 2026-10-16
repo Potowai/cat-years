@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS cats (
   slug text NOT NULL,
   birthdate date NOT NULL,
   photo_url text NOT NULL,
+  photos text[] NOT NULL DEFAULT '{}',
   bio text,
   coat text,
   purrs integer NOT NULL DEFAULT 0,
@@ -27,6 +28,7 @@ CREATE TABLE IF NOT EXISTS cats (
 );
 CREATE UNIQUE INDEX IF NOT EXISTS cats_slug_idx ON cats (slug);
 CREATE INDEX IF NOT EXISTS cats_created_at_idx ON cats (created_at);
+ALTER TABLE cats ADD COLUMN IF NOT EXISTS photos text[] NOT NULL DEFAULT '{}';
 `
 
 async function main() {
@@ -42,18 +44,13 @@ async function main() {
     const tokenHash = await hashToken(token)
     const slug = slugify(cat.name)
     const res = await client.query(
-      `INSERT INTO cats (id, name, slug, birthdate, photo_url, bio, coat, purrs, edit_token_hash)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-       ON CONFLICT DO NOTHING`,
+      `INSERT INTO cats (id, name, slug, birthdate, photo_url, photos, bio, coat, purrs, edit_token_hash)
+       VALUES ($1, $2, $3, $4, $5, ARRAY[$5], $6, $7, $8, $9)
+       ON CONFLICT DO NOTHING
+       RETURNING id`,
       [id, cat.name, slug, cat.birthdate, cat.photoUrl, cat.bio, cat.coat, cat.purrs, tokenHash],
     )
-    if ((res.affectedRows ?? 0) === 0) {
-      // dedup: check existing
-      const existing = await client.query('SELECT id FROM cats WHERE slug = $1', [slug])
-      if ((existing.rows?.length ?? 0) === 0) console.log('insert returned 0 affected for', slug, JSON.stringify(res))
-    } else {
-      added++
-    }
+    added += res.rows.length
   }
   await client.close()
   console.log(`Seeded ${added} of ${demo.length} demo cats.`)

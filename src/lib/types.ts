@@ -1,10 +1,15 @@
+export const MAX_PHOTOS = 8
+
 export type CatDTO = {
   id: string
   name: string
   slug: string
   /** ISO calendar date, e.g. "2021-04-09" */
   birthdate: string
+  /** Cover photo — always the first entry of `photos`. */
   photoUrl: string
+  /** All photos, in display order (at least one). */
+  photos: string[]
   bio: string | null
   coat: string | null
   purrs: number

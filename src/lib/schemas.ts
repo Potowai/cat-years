@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { MAX_PHOTOS } from './types'
 
 const COAT_IDS = [
   'orange',
@@ -13,6 +14,14 @@ const COAT_IDS = [
 
 const MIN_DATE = '1990-01-01'
 
+const photoUrlSchema = z
+  .string()
+  .max(600)
+  .refine(
+    (u) => u.startsWith('/uploads/') || /^https:\/\//.test(u),
+    'Invalid photo.',
+  )
+
 export const catInputSchema = z.object({
   name: z.string().trim().min(1, 'Your cat needs a name.').max(40),
   birthdate: z
@@ -23,13 +32,10 @@ export const catInputSchema = z.object({
       (d) => d <= new Date().toISOString().slice(0, 10),
       'That birthday is in the future.',
     ),
-  photoUrl: z
-    .string()
-    .max(600)
-    .refine(
-      (u) => u.startsWith('/uploads/') || /^https:\/\//.test(u),
-      'Invalid photo.',
-    ),
+  photos: z
+    .array(photoUrlSchema)
+    .min(1, 'Add at least one photo.')
+    .max(MAX_PHOTOS, `Up to ${MAX_PHOTOS} photos per cat.`),
   bio: z.string().trim().max(280).optional(),
   coat: z.enum(COAT_IDS).optional(),
 })

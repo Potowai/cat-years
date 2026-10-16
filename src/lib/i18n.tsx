@@ -75,6 +75,9 @@ export type Dict = {
     copied: string
     purrAria: string
     purrWord: string
+    prevPhoto: string
+    nextPhoto: string
+    photoOf: (n: number, total: number) => string
     ownerBadge: string
     edit: string
     delete: string
@@ -127,6 +130,9 @@ export type Dict = {
     editSubtitle: string
     photo: string
     photoHint: string
+    addPhoto: string
+    cover: string
+    maxPhotos: (n: number) => string
     drop: string
     dropOr: string
     tapChange: string
@@ -158,6 +164,7 @@ export type Dict = {
     aiCatOk: string
     aiNotCat: string
     errPhotoMissing: string
+    errTooManyPhotos: string
     errNameMissing: string
     errBirthdayMissing: string
     errFuture: string
@@ -282,6 +289,9 @@ const en: Dict = {
     copied: 'Link copied!',
     purrAria: 'Give this cat a purr',
     purrWord: 'purrs',
+    prevPhoto: 'Previous photo',
+    nextPhoto: 'Next photo',
+    photoOf: (n, total) => `Photo ${n} of ${total}`,
     ownerBadge: 'You added this cat 🐾',
     edit: 'Edit',
     delete: 'Delete',
@@ -345,8 +355,11 @@ const en: Dict = {
       'A photo, a name, a birthday. No account, no email, no nonsense. You can edit or remove your cat later — we keep a little key in your browser.',
     editTitle: (name) => `Edit ${name}`,
     editSubtitle: 'Change whatever you like. The age recalculates as you go.',
-    photo: 'Photo',
-    photoHint: 'JPG, PNG, WEBP or GIF · under 4MB',
+    photo: 'Photos',
+    photoHint: 'JPG, PNG, WEBP or GIF · up to 8 photos',
+    addPhoto: 'Add a photo',
+    cover: 'Cover',
+    maxPhotos: (n) => `Up to ${n} photos per cat.`,
     drop: 'Drop a photo here',
     dropOr: 'or click to choose from your device',
     tapChange: 'Tap to change',
@@ -385,6 +398,7 @@ const en: Dict = {
       cream: 'Cream',
     },
     errPhotoMissing: 'Add a photo of your cat — this is the whole point.',
+    errTooManyPhotos: 'That is a lot of photos. Eight is plenty.',
     errNameMissing: 'Your cat needs a name.',
     errBirthdayMissing: 'Pick a birthday so we can do the math.',
     errFuture: 'That birthday is in the future. Time-traveling cat?',
@@ -578,6 +592,9 @@ const fr: Dict = {
     copied: 'Lien copié !',
     purrAria: 'Offrir un ronron à ce chat',
     purrWord: 'ronrons',
+    prevPhoto: 'Photo précédente',
+    nextPhoto: 'Photo suivante',
+    photoOf: (n, total) => `Photo ${n} sur ${total}`,
     ownerBadge: 'Vous avez ajouté ce chat 🐾',
     edit: 'Modifier',
     delete: 'Supprimer',
@@ -641,8 +658,11 @@ const fr: Dict = {
       'Une photo, un nom, une date de naissance. Pas de compte, pas d’e-mail, pas de chichis. Vous pourrez modifier ou retirer votre chat plus tard — on garde une petite clé dans votre navigateur.',
     editTitle: (name) => `Modifier ${name}`,
     editSubtitle: 'Changez ce que vous voulez. L’âge se recalcule au fur et à mesure.',
-    photo: 'Photo',
-    photoHint: 'JPG, PNG, WEBP ou GIF · moins de 4 Mo',
+    photo: 'Photos',
+    photoHint: 'JPG, PNG, WEBP ou GIF · jusqu’à 8 photos',
+    addPhoto: 'Ajouter une photo',
+    cover: 'Couverture',
+    maxPhotos: (n) => `Jusqu’à ${n} photos par chat.`,
     drop: 'Déposez une photo ici',
     dropOr: 'ou cliquez pour choisir depuis votre appareil',
     tapChange: 'Touchez pour changer',
@@ -683,6 +703,7 @@ const fr: Dict = {
       cream: 'Crème',
     },
     errPhotoMissing: 'Ajoutez une photo de votre chat — c’est tout l’intérêt.',
+    errTooManyPhotos: 'Ça fait beaucoup de photos. Huit, c’est déjà bien.',
     errNameMissing: 'Votre chat a besoin d’un nom.',
     errBirthdayMissing: 'Choisissez une date de naissance pour qu’on fasse le calcul.',
     errFuture: 'Cette date de naissance est dans le futur. Un chat voyageur temporel ?',

@@ -7,7 +7,7 @@ import { seo } from '~/lib/seo'
 import { buttonClass } from '~/components/ui'
 import { getCatFn } from '~/server/cats.functions'
 
-export const Route = createFileRoute('/cats/$catSlug/edit')({
+export const Route = createFileRoute('/cats/$catSlug_/edit')({
   loader: async ({ params }) => {
     const cat = await getCatFn({ data: { slug: params.catSlug } })
     if (!cat) throw notFound()

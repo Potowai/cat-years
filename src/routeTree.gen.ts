@@ -15,7 +15,7 @@ import { Route as LettresAnneesRouteImport } from './routes/lettres-annees'
 import { Route as NewRouteImport } from './routes/new'
 import { Route as ApiUploadRouteImport } from './routes/api.upload'
 import { Route as CatsCatSlugRouteImport } from './routes/cats.$catSlug'
-import { Route as CatsCatSlugEditRouteImport } from './routes/cats.$catSlug.edit'
+import { Route as CatsCatSlugEditRouteImport } from './routes/cats.$catSlug_.edit'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -48,9 +48,9 @@ const CatsCatSlugRoute = CatsCatSlugRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const CatsCatSlugEditRoute = CatsCatSlugEditRouteImport.update({
-  id: '/edit',
-  path: '/edit',
-  getParentRoute: () => CatsCatSlugRoute,
+  id: '/cats/$catSlug_/edit',
+  path: '/cats/$catSlug/edit',
+  getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -59,7 +59,7 @@ export interface FileRoutesByFullPath {
   '/lettres-annees': typeof LettresAnneesRoute
   '/new': typeof NewRoute
   '/api/upload': typeof ApiUploadRoute
-  '/cats/$catSlug': typeof CatsCatSlugRouteWithChildren
+  '/cats/$catSlug': typeof CatsCatSlugRoute
   '/cats/$catSlug/edit': typeof CatsCatSlugEditRoute
 }
 export interface FileRoutesByTo {
@@ -68,7 +68,7 @@ export interface FileRoutesByTo {
   '/lettres-annees': typeof LettresAnneesRoute
   '/new': typeof NewRoute
   '/api/upload': typeof ApiUploadRoute
-  '/cats/$catSlug': typeof CatsCatSlugRouteWithChildren
+  '/cats/$catSlug': typeof CatsCatSlugRoute
   '/cats/$catSlug/edit': typeof CatsCatSlugEditRoute
 }
 export interface FileRoutesById {
@@ -78,8 +78,8 @@ export interface FileRoutesById {
   '/lettres-annees': typeof LettresAnneesRoute
   '/new': typeof NewRoute
   '/api/upload': typeof ApiUploadRoute
-  '/cats/$catSlug': typeof CatsCatSlugRouteWithChildren
-  '/cats/$catSlug/edit': typeof CatsCatSlugEditRoute
+  '/cats/$catSlug': typeof CatsCatSlugRoute
+  '/cats/$catSlug_/edit': typeof CatsCatSlugEditRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -108,7 +108,7 @@ export interface FileRouteTypes {
     | '/new'
     | '/api/upload'
     | '/cats/$catSlug'
-    | '/cats/$catSlug/edit'
+    | '/cats/$catSlug_/edit'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -117,7 +117,8 @@ export interface RootRouteChildren {
   LettresAnneesRoute: typeof LettresAnneesRoute
   NewRoute: typeof NewRoute
   ApiUploadRoute: typeof ApiUploadRoute
-  CatsCatSlugRoute: typeof CatsCatSlugRouteWithChildren
+  CatsCatSlugRoute: typeof CatsCatSlugRoute
+  CatsCatSlugEditRoute: typeof CatsCatSlugEditRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -164,27 +165,15 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CatsCatSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/cats/$catSlug/edit': {
-      id: '/cats/$catSlug/edit'
-      path: '/edit'
+    '/cats/$catSlug_/edit': {
+      id: '/cats/$catSlug_/edit'
+      path: '/cats/$catSlug/edit'
       fullPath: '/cats/$catSlug/edit'
       preLoaderRoute: typeof CatsCatSlugEditRouteImport
-      parentRoute: typeof CatsCatSlugRoute
+      parentRoute: typeof rootRouteImport
     }
   }
 }
-
-interface CatsCatSlugRouteChildren {
-  CatsCatSlugEditRoute: typeof CatsCatSlugEditRoute
-}
-
-const CatsCatSlugRouteChildren: CatsCatSlugRouteChildren = {
-  CatsCatSlugEditRoute: CatsCatSlugEditRoute,
-}
-
-const CatsCatSlugRouteWithChildren = CatsCatSlugRoute._addFileChildren(
-  CatsCatSlugRouteChildren,
-)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -192,7 +181,8 @@ const rootRouteChildren: RootRouteChildren = {
   LettresAnneesRoute: LettresAnneesRoute,
   NewRoute: NewRoute,
   ApiUploadRoute: ApiUploadRoute,
-  CatsCatSlugRoute: CatsCatSlugRouteWithChildren,
+  CatsCatSlugRoute: CatsCatSlugRoute,
+  CatsCatSlugEditRoute: CatsCatSlugEditRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm'
 import {
   date,
   index,
@@ -13,9 +14,13 @@ export const cats = pgTable(
   {
     id: uuid('id').primaryKey(),
     name: text('name').notNull(),
+    /** Unique, derived from the name — duplicates get a -2, -3 … suffix. */
     slug: text('slug').notNull().unique(),
     birthdate: date('birthdate').notNull(),
+    /** Cover photo (first of `photos`), kept for backwards compatibility. */
     photoUrl: text('photo_url').notNull(),
+    /** All photos of the cat, in display order. */
+    photos: text('photos').array().notNull().default(sql`'{}'::text[]`),
     bio: text('bio'),
     coat: text('coat'),
     purrs: integer('purrs').notNull().default(0),

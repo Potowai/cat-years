@@ -3,6 +3,7 @@ import { createFileRoute, Link, notFound } from '@tanstack/react-router'
 import { ArrowLeft, Share2 } from 'lucide-react'
 import { OwnerActions } from '~/components/OwnerActions'
 import { PurrButton } from '~/components/PurrButton'
+import { CatCarousel } from '~/components/CatCarousel'
 import { buttonClass, Chip } from '~/components/ui'
 import { computeCatAge } from '~/lib/catAge'
 import { getDict, localeFromMatches, useI18n } from '~/lib/i18n'
@@ -84,11 +85,7 @@ function CatDetail() {
       <div className="mt-6 grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:items-start">
         <div className="relative mx-auto w-full max-w-md lg:sticky lg:top-24">
           <div className="tape rotate-[-1.5deg] rounded-[26px] border-2 border-ink bg-paper p-3 pb-20 shadow-sticker-lg">
-            <img
-              src={cat.photoUrl}
-              alt={cat.name}
-              className="block w-full rounded-[16px] border-2 border-ink object-cover"
-            />
+            <CatCarousel photos={cat.photos} name={cat.name} />
             <div className="absolute inset-x-0 bottom-5 flex items-baseline justify-between gap-3 px-6">
               <span className="truncate font-display text-3xl font-black">
                 {cat.name}

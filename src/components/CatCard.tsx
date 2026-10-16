@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { PawPrint } from 'lucide-react'
+import { Images, PawPrint } from 'lucide-react'
 import { computeCatAge } from '~/lib/catAge'
 import { useI18n } from '~/lib/i18n'
 import type { CatDTO } from '~/lib/types'
@@ -42,6 +42,14 @@ export function CatCard({
               {i18n.stageLabel(age.stageId)}
             </Chip>
           </div>
+          {cat.photos.length > 1 ? (
+            <div className="absolute right-2.5 top-2.5">
+              <Chip tone="cream">
+                <Images className="size-3" aria-hidden />
+                {cat.photos.length}
+              </Chip>
+            </div>
+          ) : null}
         </div>
 
         <div className="flex items-end justify-between gap-3 px-1.5 pb-1 pt-3">

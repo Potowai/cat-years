@@ -1,23 +1,34 @@
 import { and, asc, desc, eq, gt, like, sql } from 'drizzle-orm'
 import { ERR } from '~/lib/errors'
 import { hashToken } from '~/lib/tokens'
-import type { CatDTO, CatSort } from '~/lib/types'
+import { MAX_PHOTOS, type CatDTO, type CatSort } from '~/lib/types'
 import { slugify } from '~/lib/utils'
 import { getDb } from './client.server'
 import { cats, type CatRow } from './schema'
 
 function toDTO(row: CatRow): CatDTO {
+  const photos =
+    row.photos && row.photos.length > 0 ? row.photos : [row.photoUrl]
   return {
     id: row.id,
     name: row.name,
     slug: row.slug,
     birthdate: row.birthdate,
-    photoUrl: row.photoUrl,
+    photoUrl: photos[0],
+    photos,
     bio: row.bio,
     coat: row.coat,
     purrs: row.purrs,
     createdAt: row.createdAt.toISOString(),
   }
+}
+
+/** Postgres unique-constraint violation (23505). */
+function isUniqueViolation(error: unknown): boolean {
+  const code = (error as { code?: string } | null)?.code
+  if (code === '23505') return true
+  const message = error instanceof Error ? error.message : String(error)
+  return /duplicate key value|unique constraint/i.test(message)
 }
 
 function orderFor(sort: CatSort) {
@@ -87,7 +98,7 @@ export async function countAllCats(): Promise<number> {
 export async function insertCat(input: {
   name: string
   birthdate: string
-  photoUrl: string
+  photos: string[]
   bio?: string
   coat?: string
   ipHash?: string
@@ -96,24 +107,36 @@ export async function insertCat(input: {
   const id = crypto.randomUUID()
   const token = crypto.randomUUID().replace(/-/g, '') + id.replace(/-/g, '')
   const tokenHash = await hashToken(token)
-  const slug = await uniqueSlug(input.name)
+  const photos = input.photos.slice(0, MAX_PHOTOS)
 
-  const rows = await db
-    .insert(cats)
-    .values({
-      id,
-      name: input.name,
-      slug,
-      birthdate: input.birthdate,
-      photoUrl: input.photoUrl,
-      bio: input.bio?.trim() ? input.bio.trim() : null,
-      coat: input.coat ?? null,
-      editTokenHash: tokenHash,
-      ipHash: input.ipHash ?? null,
-    })
-    .returning()
-
-  return { cat: toDTO(rows[0]), token }
+  // Names may repeat: `uniqueSlug` derives a free slug, and we retry on the
+  // rare race where two inserts pick the same slug at the same moment.
+  let lastError: unknown
+  for (let attempt = 0; attempt < 6; attempt += 1) {
+    const slug = await uniqueSlug(input.name)
+    try {
+      const rows = await db
+        .insert(cats)
+        .values({
+          id,
+          name: input.name,
+          slug,
+          birthdate: input.birthdate,
+          photoUrl: photos[0],
+          photos,
+          bio: input.bio?.trim() ? input.bio.trim() : null,
+          coat: input.coat ?? null,
+          editTokenHash: tokenHash,
+          ipHash: input.ipHash ?? null,
+        })
+        .returning()
+      return { cat: toDTO(rows[0]), token }
+    } catch (error) {
+      if (!isUniqueViolation(error)) throw error
+      lastError = error
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error(ERR.GENERIC)
 }
 
 async function assertOwner(slug: string, token: string): Promise<CatRow> {
@@ -133,18 +156,20 @@ export async function updateCat(input: {
   token: string
   name: string
   birthdate: string
-  photoUrl: string
+  photos: string[]
   bio?: string
   coat?: string
 }): Promise<CatDTO> {
   const db = await getDb()
   await assertOwner(input.slug, input.token)
+  const photos = input.photos.slice(0, MAX_PHOTOS)
   const rows = await db
     .update(cats)
     .set({
       name: input.name,
       birthdate: input.birthdate,
-      photoUrl: input.photoUrl,
+      photoUrl: photos[0],
+      photos,
       bio: input.bio?.trim() ? input.bio.trim() : null,
       coat: input.coat ?? null,
     })

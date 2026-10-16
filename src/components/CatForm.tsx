@@ -7,7 +7,12 @@ import { celebrate } from '~/lib/confetti'
 import { useI18n } from '~/lib/i18n'
 import { validateImage } from '~/lib/image'
 import { rememberOwnership } from '~/lib/tokens'
-import { COAT_OPTIONS, type CatDTO, type CoatId } from '~/lib/types'
+import {
+  COAT_OPTIONS,
+  MAX_PHOTOS,
+  type CatDTO,
+  type CoatId,
+} from '~/lib/types'
 import { cn } from '~/lib/utils'
 import { uploadPhoto } from '~/lib/upload'
 import { createCatFn, updateCatFn } from '~/server/cats.functions'
@@ -21,14 +26,25 @@ type CatFormProps = {
 
 type AiStatus = 'idle' | 'checking' | 'ok' | 'not-cat' | 'error'
 
+type PhotoItem = { id: string; url: string; file?: File }
+
+function initialPhotos(initial?: CatDTO): PhotoItem[] {
+  const urls =
+    initial?.photos && initial.photos.length > 0
+      ? initial.photos
+      : initial?.photoUrl
+        ? [initial.photoUrl]
+        : []
+  return urls.map((url) => ({ id: crypto.randomUUID(), url }))
+}
+
 export function CatForm({ mode, initial, token }: CatFormProps) {
   const i18n = useI18n()
   const navigate = useNavigate()
   const fileInput = useRef<HTMLInputElement>(null)
   const checkId = useRef(0)
 
-  const [file, setFile] = useState<File | null>(null)
-  const [preview, setPreview] = useState(initial?.photoUrl ?? '')
+  const [photos, setPhotos] = useState<PhotoItem[]>(() => initialPhotos(initial))
   const [name, setName] = useState(initial?.name ?? '')
   const [birthdate, setBirthdate] = useState(initial?.birthdate ?? '')
   const [coat, setCoat] = useState<CoatId | undefined>(
@@ -43,50 +59,75 @@ export function CatForm({ mode, initial, token }: CatFormProps) {
 
   const age = birthdate ? computeCatAge(birthdate) : null
   const today = new Date().toISOString().slice(0, 10)
+  const cover = photos[0]?.url ?? ''
 
-  function chooseFile(list: FileList | null) {
-    const picked = list?.[0]
-    if (!picked) return
-    const problem = validateImage(picked)
-    if (problem) {
-      setError(i18n.errorMessage(problem))
-      return
-    }
-    setError(null)
-    setFile(picked)
-    setPreview(URL.createObjectURL(picked))
-
+  function runChecks(items: PhotoItem[]) {
     const id = ++checkId.current
     setAiStatus('checking')
     setAiReview(null)
-    void checkIsCat(picked).then((result) => {
-      if (id !== checkId.current) return
-      setAiReview(result.predictions ?? null)
-      if (result.status === 'ok') {
-        setAiStatus('ok')
-        setError(null)
-      } else if (result.status === 'not-cat') {
-        setAiStatus('not-cat')
-        setError(i18n.form.aiNotCat)
-      } else {
-        setAiStatus('error')
+    void (async () => {
+      for (const item of items) {
+        if (!item.file) continue
+        const result = await checkIsCat(item.file)
+        if (id !== checkId.current) return
+        setAiReview(result.predictions ?? null)
+        if (result.status === 'not-cat') {
+          // Drop the offending photo and tell the user why.
+          URL.revokeObjectURL(item.url)
+          setPhotos((prev) => prev.filter((p) => p.id !== item.id))
+          setAiStatus('not-cat')
+          setError(i18n.form.aiNotCat)
+          return
+        }
       }
-    })
+      if (id === checkId.current) setAiStatus('ok')
+    })()
   }
 
-  function clearFile() {
+  function chooseFiles(list: FileList | null) {
+    const picked = Array.from(list ?? [])
+    if (picked.length === 0) return
+
+    const accepted: PhotoItem[] = []
+    let problem: string | null = null
+    for (const file of picked) {
+      const invalid = validateImage(file)
+      if (invalid) {
+        problem = i18n.errorMessage(invalid)
+        continue
+      }
+      accepted.push({
+        id: crypto.randomUUID(),
+        url: URL.createObjectURL(file),
+        file,
+      })
+    }
+
+    const room = MAX_PHOTOS - photos.length
+    const take = accepted.slice(0, Math.max(0, room))
+    if (accepted.length > take.length) problem = i18n.form.errTooManyPhotos
+    setError(problem)
+    if (take.length === 0) return
+
+    setPhotos((prev) => [...prev, ...take])
+    runChecks(take)
+  }
+
+  function removePhoto(id: string) {
+    const item = photos.find((p) => p.id === id)
+    if (item?.file) URL.revokeObjectURL(item.url)
+    setPhotos((prev) => prev.filter((p) => p.id !== id))
     checkId.current += 1
-    setFile(null)
-    setPreview('')
     setAiStatus('idle')
     setAiReview(null)
+    setError(null)
   }
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
     if (submitting) return
 
-    if (!preview && !file) {
+    if (photos.length === 0) {
       setError(i18n.form.errPhotoMissing)
       return
     }
@@ -102,11 +143,11 @@ export function CatForm({ mode, initial, token }: CatFormProps) {
       setError(i18n.form.errFuture)
       return
     }
-    if (file && aiStatus === 'checking') {
+    if (aiStatus === 'checking') {
       setError(i18n.form.aiChecking)
       return
     }
-    if (file && aiStatus === 'not-cat') {
+    if (aiStatus === 'not-cat') {
       setError(i18n.form.aiNotCat)
       return
     }
@@ -114,15 +155,15 @@ export function CatForm({ mode, initial, token }: CatFormProps) {
     setSubmitting(true)
     setError(null)
     try {
-      let photoUrl = initial?.photoUrl ?? ''
-      if (file) {
-        photoUrl = await uploadPhoto(file)
+      const uploaded: string[] = []
+      for (const item of photos) {
+        uploaded.push(item.file ? await uploadPhoto(item.file) : item.url)
       }
 
       const payload = {
         name: name.trim(),
         birthdate,
-        photoUrl,
+        photos: uploaded,
         bio: bio.trim() || undefined,
         coat,
       }
@@ -159,15 +200,6 @@ export function CatForm({ mode, initial, token }: CatFormProps) {
         <div>
           <Label hint={i18n.form.photoHint}>{i18n.form.photo}</Label>
           <div
-            role="button"
-            tabIndex={0}
-            onClick={() => fileInput.current?.click()}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault()
-                fileInput.current?.click()
-              }
-            }}
             onDragOver={(e) => {
               e.preventDefault()
               setDragging(true)
@@ -176,54 +208,81 @@ export function CatForm({ mode, initial, token }: CatFormProps) {
             onDrop={(e) => {
               e.preventDefault()
               setDragging(false)
-              chooseFile(e.dataTransfer.files)
+              chooseFiles(e.dataTransfer.files)
             }}
             className={cn(
-              'relative flex aspect-[4/3] cursor-pointer items-center justify-center overflow-hidden rounded-[26px] border-2 border-dashed bg-cream/40 transition-colors',
+              'rounded-[26px] border-2 border-dashed bg-cream/40 p-3 transition-colors',
               dragging ? 'border-tangerine bg-tangerine/10' : 'border-ink/50',
             )}
           >
-            {preview ? (
-              <>
-                <img
-                  src={preview}
-                  alt={i18n.form.previewAlt}
-                  className="size-full object-cover"
-                />
-                <span className="absolute bottom-3 left-3 rounded-full border-2 border-ink bg-paper px-3 py-1 text-xs font-bold shadow-sticker-sm">
-                  {i18n.form.tapChange}
-                </span>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              {photos.map((item, i) => (
+                <div
+                  key={item.id}
+                  className="relative overflow-hidden rounded-[18px] border-2 border-ink bg-cream"
+                >
+                  <img
+                    src={item.url}
+                    alt={i18n.form.previewAlt}
+                    className="aspect-[4/3] w-full object-cover"
+                  />
+                  {i === 0 ? (
+                    <span className="absolute left-2 top-2 rounded-full border-2 border-ink bg-butter px-2 py-0.5 text-[10px] font-black uppercase tracking-wider">
+                      {i18n.form.cover}
+                    </span>
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={() => removePhoto(item.id)}
+                    aria-label={i18n.form.removePhoto}
+                    className="absolute right-2 top-2 grid size-8 place-items-center rounded-full border-2 border-ink bg-paper shadow-sticker-sm"
+                  >
+                    <X className="size-4" aria-hidden />
+                  </button>
+                </div>
+              ))}
+
+              {photos.length < MAX_PHOTOS ? (
                 <button
                   type="button"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    clearFile()
-                  }}
-                  aria-label={i18n.form.removePhoto}
-                  className="absolute right-3 top-3 grid size-9 place-items-center rounded-full border-2 border-ink bg-paper shadow-sticker-sm"
+                  onClick={() => fileInput.current?.click()}
+                  className="flex aspect-[4/3] flex-col items-center justify-center gap-2 rounded-[18px] border-2 border-dashed border-ink/50 bg-paper/60 text-center transition-colors hover:border-ink hover:bg-paper"
                 >
-                  <X className="size-4" aria-hidden />
+                  <span className="grid size-11 place-items-center rounded-2xl border-2 border-ink bg-butter shadow-sticker-sm">
+                    <ImagePlus className="size-5" aria-hidden />
+                  </span>
+                  <span className="px-2 text-xs font-bold text-ink-soft">
+                    {i18n.form.addPhoto}
+                  </span>
                 </button>
-              </>
-            ) : (
-              <div className="flex flex-col items-center gap-3 px-6 text-center">
-                <span className="grid size-16 place-items-center rounded-2xl border-2 border-ink bg-butter shadow-sticker-sm">
-                  <ImagePlus className="size-7" aria-hidden />
-                </span>
-                <span className="font-bold">{i18n.form.drop}</span>
-                <span className="text-sm font-medium text-ink-soft">
-                  {i18n.form.dropOr}
-                </span>
-              </div>
-            )}
+              ) : null}
+            </div>
+
+            {photos.length === 0 ? (
+              <p className="px-2 py-4 text-center text-sm font-medium text-ink-soft">
+                {i18n.form.drop} — {i18n.form.dropOr}
+              </p>
+            ) : null}
+
+            {photos.length >= MAX_PHOTOS ? (
+              <p className="mt-3 text-center text-xs font-bold text-ink-soft">
+                {i18n.form.maxPhotos(MAX_PHOTOS)}
+              </p>
+            ) : null}
+
             <input
               ref={fileInput}
               type="file"
               accept="image/*"
+              multiple
               className="sr-only"
-              onChange={(e) => chooseFile(e.target.files)}
+              onChange={(e) => {
+                chooseFiles(e.target.files)
+                e.target.value = ''
+              }}
             />
           </div>
+
           {aiStatus === 'checking' ||
           aiStatus === 'ok' ||
           aiStatus === 'not-cat' ? (
@@ -342,9 +401,9 @@ export function CatForm({ mode, initial, token }: CatFormProps) {
             {i18n.form.livePreview}
           </p>
           <div className="overflow-hidden rounded-[20px] border-2 border-ink bg-cream">
-            {preview ? (
+            {cover ? (
               <img
-                src={preview}
+                src={cover}
                 alt=""
                 className="aspect-[4/3] w-full object-cover"
               />
@@ -354,6 +413,11 @@ export function CatForm({ mode, initial, token }: CatFormProps) {
               </div>
             )}
           </div>
+          {photos.length > 1 ? (
+            <p className="mt-2 text-center text-xs font-bold text-ink-soft">
+              {i18n.detail.photoOf(1, photos.length)}
+            </p>
+          ) : null}
           <div className="mt-4 flex items-center justify-between gap-2">
             <span className="truncate font-display text-3xl font-black">
               {name.trim() || i18n.form.yourCat}
