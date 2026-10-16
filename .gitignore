@@ -20,3 +20,7 @@ npm-debug.log*
 .vscode/*
 !.vscode/extensions.json
 .idea
+
+# agent tooling (local)
+.agents/
+skills-lock.json

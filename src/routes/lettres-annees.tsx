@@ -1,12 +1,15 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { ArrowLeft, Cat, PawPrint } from 'lucide-react'
 import { buttonClass, Chip } from '~/components/ui'
-import { catYearLetter } from '~/lib/catAge'
+import { catYearLetters } from '~/lib/catAge'
 import { getDict, localeFromMatches, useI18n } from '~/lib/i18n'
 import { seo } from '~/lib/seo'
 
-const FIRST_YEAR = 2020
-const LAST_YEAR = 2032
+/** The years shown, matching the official LOOF table. */
+const FIRST_YEAR = 2015
+const LAST_YEAR = 2034
+const PER_ROW = 5
+const LOOF_URL = 'https://loof.asso.fr/une-annee-une-lettre'
 
 export const Route = createFileRoute('/lettres-annees')({
   head: ({ matches }) => {
@@ -25,11 +28,17 @@ function YearLetters() {
   const i18n = useI18n()
   const l = i18n.letters
   const thisYear = new Date().getUTCFullYear()
-  const thisLetter = catYearLetter(thisYear)
+  const thisLetters = catYearLetters(thisYear)
+  const thisLabel = joinLetters(thisLetters, l.or)
+
   const years = Array.from(
     { length: LAST_YEAR - FIRST_YEAR + 1 },
     (_, i) => FIRST_YEAR + i,
   )
+  const rows: number[][] = []
+  for (let i = 0; i < years.length; i += PER_ROW) {
+    rows.push(years.slice(i, i + PER_ROW))
+  }
 
   return (
     <div className="mx-auto max-w-4xl px-5 py-10">
@@ -55,10 +64,10 @@ function YearLetters() {
 
       <section className="mt-12 overflow-hidden rounded-[28px] border-2 border-ink bg-ink text-paper shadow-sticker">
         <p className="px-6 pt-7 text-lg font-semibold text-cream/80">
-          {l.thisYearIs(thisYear, thisLetter)}
+          {l.thisYearIs(thisYear, thisLabel)}
         </p>
         <p className="px-6 py-4 font-display text-[9rem] font-black leading-none text-butter">
-          {thisLetter}
+          {thisLabel}
         </p>
         <p className="border-t-2 border-paper/15 px-6 py-4 text-sm font-semibold text-cream/85">
           {l.cycle}
@@ -68,48 +77,81 @@ function YearLetters() {
       <section className="mt-14">
         <h2 className="text-3xl font-black">{l.listTitle}</h2>
         <p className="mt-2 font-medium text-ink-soft">{l.listHint}</p>
-        <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {years.map((year) => {
-            const letter = catYearLetter(year)
-            const current = year === thisYear
-            return (
-              <div
-                key={year}
-                className={
-                  current
-                    ? 'rounded-3xl border-2 border-ink bg-butter p-4 text-center shadow-sticker'
-                    : 'rounded-3xl border-2 border-ink bg-paper p-4 text-center shadow-sticker-sm'
-                }
-              >
-                <p className="font-display text-3xl font-black leading-none">
-                  {letter}
-                </p>
-                <p className="mt-2 text-sm font-bold text-ink-soft">
-                  {year}
-                </p>
-                {current ? (
-                  <p className="mt-2 text-[10px] font-black uppercase tracking-wider">
-                    {l.current}
-                  </p>
-                ) : null}
-              </div>
-            )
-          })}
+
+        <div className="mt-6 space-y-4">
+          {rows.map((row) => (
+            <div
+              key={row[0]}
+              className="overflow-hidden rounded-2xl border-2 border-ink shadow-sticker-sm"
+            >
+              <table className="w-full table-fixed border-collapse text-center">
+                <thead>
+                  <tr className="bg-sky text-paper">
+                    {row.map((year) => (
+                      <th
+                        key={year}
+                        scope="col"
+                        className="border-r-2 border-paper/20 px-2 py-2.5 text-sm font-black tracking-wide last:border-r-0"
+                      >
+                        {year}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    {row.map((year) => {
+                      const letters = catYearLetters(year)
+                      const current = year === thisYear
+                      return (
+                        <td
+                          key={year}
+                          className={
+                            current
+                              ? 'border-r-2 border-ink/10 bg-butter px-2 py-4 last:border-r-0'
+                              : 'border-r-2 border-ink/10 bg-paper px-2 py-4 last:border-r-0'
+                          }
+                        >
+                          <span className="font-display text-2xl font-black">
+                            {joinLetters(letters, l.or)}
+                          </span>
+                          {current ? (
+                            <span className="mt-1 block text-[10px] font-black uppercase tracking-wider">
+                              {l.current}
+                            </span>
+                          ) : null}
+                        </td>
+                      )
+                    })}
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          ))}
         </div>
+
+        <p className="mt-6 text-sm font-medium text-ink-soft">
+          {l.source}{' '}
+          <a
+            href={LOOF_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="font-bold underline decoration-ink/30 underline-offset-4 transition-colors hover:text-ink hover:decoration-ink"
+          >
+            {l.sourceLabel}
+          </a>
+        </p>
       </section>
 
       <section className="mt-14">
-        <h2 className="text-3xl font-black">{l.ideasTitle}</h2>
+        <h2 className="text-2xl font-black">{l.usageTitle}</h2>
         <ul className="mt-4 grid gap-3">
-          {l.ideas.map((idea) => (
+          {l.usage.map((point) => (
             <li
-              key={idea}
-              className="flex items-start gap-3 rounded-3xl border-2 border-ink bg-paper px-5 py-4 font-medium shadow-sticker-sm"
+              key={point}
+              className="rounded-3xl border-2 border-ink bg-paper px-5 py-4 font-medium text-ink-soft shadow-sticker-sm"
             >
-              <span aria-hidden className="text-xl">
-                🧶
-              </span>
-              <span className="text-ink-soft">{idea}</span>
+              {point}
             </li>
           ))}
         </ul>
@@ -127,4 +169,10 @@ function YearLetters() {
       </div>
     </div>
   )
+}
+
+function joinLetters(letters: string[], or: string): string {
+  if (letters.length <= 1) return letters[0] ?? ''
+  if (letters.length === 2) return `${letters[0]} ${or} ${letters[1]}`
+  return `${letters.slice(0, -1).join(', ')} ${or} ${letters[letters.length - 1]}`
 }

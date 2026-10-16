@@ -111,22 +111,50 @@ export const STAGE_RANGES: Array<{
   { id: 'geriatric', fromMonths: 180, toMonths: null },
 ]
 
-const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-
-/** 2026 — the year this tradition was imported — is the letter V. */
-const REFERENCE_YEAR = 2026
-const REFERENCE_INDEX = ALPHABET.indexOf('V')
-
 /**
- * The letter of the cat year: one letter for every year, cycling through the
- * alphabet (V in 2026, W in 2027, … then back to A after Z). Kittens born that
- * year take it as their middle initial.
+ * Official LOOF « Une année, une lettre » table (source: loof.asso.fr).
+ *
+ * One letter per year, but a few years offer several letters (P or Q, V to Z,
+ * J or K) because some initials are too rare to fill. That consumes all 26
+ * letters over a 20-year cycle, so 2015 = L and 2035 = L again.
  */
-export function catYearLetter(year: number): string {
-  const offset = year - REFERENCE_YEAR
-  const index = (((REFERENCE_INDEX + offset) % 26) + 26) % 26
-  return ALPHABET[index]
+const YEAR_LETTERS: readonly string[][] = [
+  ['L'], // 2015
+  ['M'], // 2016
+  ['N'], // 2017
+  ['O'], // 2018
+  ['P', 'Q'], // 2019
+  ['R'], // 2020
+  ['S'], // 2021
+  ['T'], // 2022
+  ['U'], // 2023
+  ['V', 'W', 'X', 'Y', 'Z'], // 2024
+  ['A'], // 2025
+  ['B'], // 2026
+  ['C'], // 2027
+  ['D'], // 2028
+  ['E'], // 2029
+  ['F'], // 2030
+  ['G'], // 2031
+  ['H'], // 2032
+  ['I'], // 2033
+  ['J', 'K'], // 2034
+]
+
+export const LETTER_CYCLE_START = 2015
+export const LETTER_CYCLE_LENGTH = YEAR_LETTERS.length
+
+/** The letter(s) of the cat year, e.g. ['B'] for 2026, ['V','W','X','Y','Z'] for 2024. */
+export function catYearLetters(year: number): string[] {
+  const index =
+    (((year - LETTER_CYCLE_START) % LETTER_CYCLE_LENGTH) +
+      LETTER_CYCLE_LENGTH) %
+    LETTER_CYCLE_LENGTH
+  return YEAR_LETTERS[index]
 }
+
+/** All 26 letters, in order, for the legend. */
+export const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
 
 export function factValues(age: CatAge) {
   const napHours = Math.round(age.totalDays * 16)

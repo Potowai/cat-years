@@ -30,12 +30,15 @@ export type Dict = {
     title: string
     intro: string
     cycle: string
-    thisYearIs: (year: number, letter: string) => string
+    thisYearIs: (year: number, letters: string) => string
     listTitle: string
     listHint: string
     current: string
-    ideasTitle: string
-    ideas: string[]
+    or: string
+    usageTitle: string
+    usage: string[]
+    source: string
+    sourceLabel: string
     ctaCalc: string
     ctaWall: string
   }
@@ -209,20 +212,25 @@ const en: Dict = {
     badge: 'One letter, one year, one cat',
     title: 'The letters of the cat years',
     intro:
-      'In the cat world, every calendar year gets its own letter, and kittens born that year take it as their middle initial. Your cat’s official name ends up looking like a royal decree.',
+      'In the cat world, every calendar year gets its own letter, and kittens born that year take it as their middle initial. It is the official system of the LOOF, the French feline registry — and it is the fastest way to guess a cat’s birth year.',
     cycle:
-      'The cycle runs through the whole alphabet once every 26 years, then starts again. V in 2026, W in 2027, and so on until Z, then back to A.',
-    thisYearIs: (year, letter) => `In ${year}, the cat year is the letter`,
-    listTitle: 'The recent and coming letters',
+      'The cycle runs through all 26 letters over 20 years, then starts again: 2015 was L, and 2035 is L again. A few years are generous and offer several letters — 2019 was P or Q, 2024 covered V to Z, 2034 is J or K — because some initials are too rare to fill.',
+    thisYearIs: (year, letters) => `In ${year}, the cat year is the letter`,
+    listTitle: 'The official table',
     listHint:
-      'Find your cat’s birth year, and there it is: the letter they were legally, spiritually and bureaucratically assigned.',
+      'Find your cat’s birth year below. If a year lists several letters, any of them counts.',
     current: 'This year',
-    ideasTitle: 'What to do with the letter',
-    ideas: [
-      'Middle name: a kitten born in 2026 is, officially, "Biscuit V."',
-      'Health booklet: one letter per year, and the endless "wait, which year was he born?" debate is over.',
-      'Birthday theme: one letter, one theme, one cake that nobody is allowed to share.',
+    or: 'or',
+    usageTitle: 'How to read the table',
+    usage: [
+      'Take the first letter of a cat’s registered (pedigree) name, then find it in the table above. A cat whose name starts with L was born in 2015 — or in 2035.',
+      'It exists to make the Livre des Origines easier to manage: the LOOF borrowed the system from the Société Centrale Canine, so the initial gives the birth year at a glance.',
+      'It is not an exact science. The cycle repeats every 20 years, and a few years allow several letters (P or Q, V to Z, J or K), so the letter narrows the year down rather than proving it.',
+      'It concerns the pedigree name registered with the LOOF, not the nickname you use at home.',
     ],
+    source:
+      'Source: LOOF (Livre Officiel des Origines Félines), the French feline registry, page « Une année, une lettre ».',
+    sourceLabel: 'See the LOOF page',
     ctaCalc: 'See how the age maths works',
     ctaWall: 'Back to the wall',
   },
@@ -500,20 +508,25 @@ const fr: Dict = {
     badge: 'Une lettre, une année, un chat',
     title: 'Les lettres des années de chat',
     intro:
-      'Dans le monde des chats, chaque année du calendrier reçoit sa lettre, et les chatons nés cette année-la la prennent comme deuxième initiale. Le nom officiel de votre chat ressemble donc à un décret royal.',
+      'Dans le monde des chats, chaque année du calendrier reçoit sa lettre, et les chatons nés cette année-là la prennent comme deuxième initiale. C’est le système officiel du LOOF, le registre félin français — et le moyen le plus rapide de deviner l’année de naissance d’un chat.',
     cycle:
-      'Le cycle parcourt tout l’alphabet une fois tous les 26 ans, puis repart. V en 2026, W en 2027, et ainsi de suite jusqu’à Z, avant de revenir à A.',
-    thisYearIs: (year, letter) => `En ${year}, l’année des chats est la lettre`,
-    listTitle: 'Les lettres récentes et à venir',
+      'Le cycle parcourt les 26 lettres en 20 ans, puis recommence : 2015, c’était L, et 2035 sera de nouveau L. Quelques années sont généreuses et offrent plusieurs lettres — 2019, c’était P ou Q ; 2024 couvrait V à Z ; 2034, c’est J ou K — parce que certaines initiales sont trop rares pour être remplies.',
+    thisYearIs: (year, letters) => `En ${year}, l’année des chats est la lettre`,
+    listTitle: 'Le tableau officiel',
     listHint:
-      'Trouvez l’année de naissance de votre chat, et voilà : la lettre qui lui a été attribuée, légalement, spirituellement et administrativement.',
+      'Trouvez l’année de naissance de votre chat ci-dessous. Si une année propose plusieurs lettres, n’importe laquelle compte.',
     current: 'Cette année',
-    ideasTitle: 'Que faire de la lettre',
-    ideas: [
-      'Deuxième prénom : un chaton né en 2026 devient, officiellement, « Biscuit V. »',
-      'Carnet de santé : une lettre par année, et le débat sans fin « attends, il était né en quelle année, déjà ? » est terminé.',
-      'Thème d’anniversaire : une lettre, un thème, un gâteau que personne n’a le droit de partager.',
+    or: 'ou',
+    usageTitle: 'Comment lire le tableau',
+    usage: [
+      'Prenez la première lettre du nom enregistré (pedigree) du chat, puis retrouvez-la dans le tableau ci-dessus. Un chat dont le nom commence par L est né en 2015 — ou en 2035.',
+      'Il sert à faciliter la gestion du Livre des Origines : le LOOF a repris le système de la Société Centrale Canine, si bien que l’initiale donne l’année de naissance d’un coup d’œil.',
+      'Ce n’est pas une science exacte. Le cycle se répète tous les 20 ans, et quelques années autorisent plusieurs lettres (P ou Q, V à Z, J ou K) : la lettre resserre l’année sans la prouver.',
+      'Cela concerne le nom de pedigree enregistré au LOOF, pas le surnom utilisé à la maison.',
     ],
+    source:
+      'Source : LOOF (Livre Officiel des Origines Félines), registre félin français, page « Une année, une lettre ».',
+    sourceLabel: 'Voir la page du LOOF',
     ctaCalc: 'Voir comment se calcule l’âge',
     ctaWall: 'Retour au mur',
   },
