@@ -22,6 +22,22 @@ export type Dict = {
     brand: string
     builtTail: string
     disclaimer: string
+    howLink: string
+    lettersLink: string
+  }
+  letters: {
+    badge: string
+    title: string
+    intro: string
+    cycle: string
+    thisYearIs: (year: number, letter: string) => string
+    listTitle: string
+    listHint: string
+    current: string
+    ideasTitle: string
+    ideas: string[]
+    ctaCalc: string
+    ctaWall: string
   }
   home: {
     badge: string
@@ -69,6 +85,37 @@ export type Dict = {
     naps: string
     heartbeats: string
     kibble: string
+  }
+  how: {
+    badge: string
+    title: string
+    intro: string
+    ruleTitle: string
+    rule1Title: string
+    rule1Body: string
+    rule2Title: string
+    rule2Body: string
+    rule3Title: string
+    rule3Body: string
+    tableTitle: string
+    tableHint: string
+    tableCat: string
+    tableHuman: string
+    tableStage: string
+    stagesTitle: string
+    stagesHint: string
+    range: (from: number, to: number) => string
+    rangeOpen: (from: number) => string
+    kibblePerDay: (grams: number) => string
+    statsTitle: string
+    statsHint: string
+    daysHow: string
+    napsHow: string
+    beatsHow: string
+    kibbleHow: string
+    caveatTitle: string
+    caveatBody: string
+    cta: string
   }
   form: {
     newTitle: string
@@ -155,6 +202,29 @@ const en: Dict = {
     brand: 'TanStack',
     builtTail: 'on Vercel.',
     disclaimer: 'Age math is an approximation. Cats are, medically, a mystery.',
+    howLink: 'How the age maths works',
+    lettersLink: 'The cat year letters',
+  },
+  letters: {
+    badge: 'One letter, one year, one cat',
+    title: 'The letters of the cat years',
+    intro:
+      'In the cat world, every calendar year gets its own letter, and kittens born that year take it as their middle initial. Your cat’s official name ends up looking like a royal decree.',
+    cycle:
+      'The cycle runs through the whole alphabet once every 26 years, then starts again. V in 2026, W in 2027, and so on until Z, then back to A.',
+    thisYearIs: (year, letter) => `In ${year}, the cat year is the letter`,
+    listTitle: 'The recent and coming letters',
+    listHint:
+      'Find your cat’s birth year, and there it is: the letter they were legally, spiritually and bureaucratically assigned.',
+    current: 'This year',
+    ideasTitle: 'What to do with the letter',
+    ideas: [
+      'Middle name: a kitten born in 2026 is, officially, "Biscuit V."',
+      'Health booklet: one letter per year, and the endless "wait, which year was he born?" debate is over.',
+      'Birthday theme: one letter, one theme, one cake that nobody is allowed to share.',
+    ],
+    ctaCalc: 'See how the age maths works',
+    ctaWall: 'Back to the wall',
   },
   home: {
     badge: "🐾 The internet's cat birthday counter",
@@ -217,6 +287,49 @@ const en: Dict = {
     naps: 'Naps (approx.)',
     heartbeats: 'Heartbeats so far',
     kibble: 'Kibble eaten (approx.)',
+  },
+  how: {
+    badge: 'The very serious maths section',
+    title: 'How we turn cat years into human years',
+    intro:
+      'Cats do not age at a steady pace. The first two years are a blur of growing up, and after that everything slows down. So we do not multiply by 7 — we use the three-step rule everyone actually uses.',
+    ruleTitle: 'The three-step rule',
+    rule1Title: 'First year',
+    rule1Body:
+      'A kitten goes from helpless to fully grown in twelve months, so year one counts as 15 human years.',
+    rule2Title: 'Second year',
+    rule2Body:
+      'Year two is the teenage-to-adult stretch, so it adds another 9 human years — 24 in total.',
+    rule3Title: 'Every year after',
+    rule3Body:
+      'Once past 24, each extra cat year adds about 4 human years. Steady, dignified, and a little grumpy.',
+    tableTitle: 'The whole scale',
+    tableHint:
+      'A quick lookup. Take the cat age on the left, read the human age on the right.',
+    tableCat: 'Cat age',
+    tableHuman: 'Human years',
+    tableStage: 'Life stage',
+    stagesTitle: 'The six life stages',
+    stagesHint:
+      'Every cat gets sorted into a stage, which is also what sets their daily kibble appetite below.',
+    range: (from, to) => `${from}–${to} months`,
+    rangeOpen: (from) => `${from} months and up`,
+    kibblePerDay: (grams) => `${grams} g / day`,
+    statsTitle: 'Where the other numbers come from',
+    statsHint:
+      'The four figures on every report card are plain multiplication, nothing clever.',
+    daysHow:
+      'Days on this planet is simply the number of days since the birthday.',
+    napsHow:
+      'Cats sleep about 16 hours a day, so we multiply days by 16 to get napping hours. Naps are those hours in roughly 3-hour chunks.',
+    beatsHow:
+      'A resting cat’s heart beats around 130 times a minute, so days × 24 × 60 × 130 gives the total.',
+    kibbleHow:
+      'Kibble is the stage’s daily appetite in grams, multiplied by the number of days. It is the average for a healthy adult cat, so consider it a rough estimate.',
+    caveatTitle: 'The honest caveat',
+    caveatBody:
+      'This is a rule of thumb, not a diagnosis. Real ageing depends on breed, size, whether a cat goes outside, and how well they are looked after. For anything that actually matters, ask a vet.',
+    cta: 'Put a cat on the wall',
   },
   form: {
     newTitle: 'Put your cat on the wall',
@@ -380,6 +493,29 @@ const fr: Dict = {
     builtTail: 'sur Vercel.',
     disclaimer:
       'Le calcul d’âge est une approximation. Les chats sont, médicalement, un mystère.',
+    howLink: 'Comment se calcule l’âge',
+    lettersLink: 'Les lettres des années',
+  },
+  letters: {
+    badge: 'Une lettre, une année, un chat',
+    title: 'Les lettres des années de chat',
+    intro:
+      'Dans le monde des chats, chaque année du calendrier reçoit sa lettre, et les chatons nés cette année-la la prennent comme deuxième initiale. Le nom officiel de votre chat ressemble donc à un décret royal.',
+    cycle:
+      'Le cycle parcourt tout l’alphabet une fois tous les 26 ans, puis repart. V en 2026, W en 2027, et ainsi de suite jusqu’à Z, avant de revenir à A.',
+    thisYearIs: (year, letter) => `En ${year}, l’année des chats est la lettre`,
+    listTitle: 'Les lettres récentes et à venir',
+    listHint:
+      'Trouvez l’année de naissance de votre chat, et voilà : la lettre qui lui a été attribuée, légalement, spirituellement et administrativement.',
+    current: 'Cette année',
+    ideasTitle: 'Que faire de la lettre',
+    ideas: [
+      'Deuxième prénom : un chaton né en 2026 devient, officiellement, « Biscuit V. »',
+      'Carnet de santé : une lettre par année, et le débat sans fin « attends, il était né en quelle année, déjà ? » est terminé.',
+      'Thème d’anniversaire : une lettre, un thème, un gâteau que personne n’a le droit de partager.',
+    ],
+    ctaCalc: 'Voir comment se calcule l’âge',
+    ctaWall: 'Retour au mur',
   },
   home: {
     badge: "🐾 Le compteur d'anniversaires de chats d'internet",
@@ -442,6 +578,49 @@ const fr: Dict = {
     naps: 'Siestes (env.)',
     heartbeats: 'Battements de cœur',
     kibble: 'Croquettes mangées (env.)',
+  },
+  how: {
+    badge: 'La section maths très sérieuse',
+    title: 'Comment on transforme les années de chat en années humaines',
+    intro:
+      'Un chat ne vieillit pas à vitesse constante. Les deux premières années sont un sprint, et ensuite tout ralentit. On ne multiplie donc pas par 7 : on applique la règle en trois étapes que tout le monde utilise.',
+    ruleTitle: 'La règle en trois étapes',
+    rule1Title: 'La première année',
+    rule1Body:
+      'Un chaton passe de minuscule à adulte en douze mois : la première année compte donc pour 15 ans humains.',
+    rule2Title: 'La deuxième année',
+    rule2Body:
+      'La deuxième année, c’est l’ado qui devient adulte : elle ajoute encore 9 ans humains, soit 24 au total.',
+    rule3Title: 'Et toutes les suivantes',
+    rule3Body:
+      'Après 24, chaque année de chat en plus ajoute environ 4 ans humains. Régulier, digne, et un peu ronchon.',
+    tableTitle: 'Toute l’échelle',
+    tableHint:
+      'Un tableau pour voir d’un coup d’œil : l’âge du chat à gauche, l’âge humain à droite.',
+    tableCat: 'Âge du chat',
+    tableHuman: 'Années humaines',
+    tableStage: 'Étape de vie',
+    stagesTitle: 'Les six étapes de vie',
+    stagesHint:
+      'Chaque chat est rangé dans une étape, qui détermine aussi son appétit quotidien en croquettes ci-dessous.',
+    range: (from, to) => `${from} à ${to} mois`,
+    rangeOpen: (from) => `${from} mois et plus`,
+    kibblePerDay: (grams) => `${grams} g / jour`,
+    statsTitle: 'D’où viennent les autres chiffres',
+    statsHint:
+      'Les quatre valeurs de chaque bulletin ne sont que des multiplications, rien de sorcier.',
+    daysHow:
+      'Les jours sur Terre sont simplement le nombre de jours écoulés depuis la date de naissance.',
+    napsHow:
+      'Un chat dort environ 16 heures par jour : on multiplie les jours par 16 pour obtenir les heures de sieste. Les siestes sont ces heures découpées en blocs de 3 heures environ.',
+    beatsHow:
+      'Le cœur d’un chat au repos bat environ 130 fois par minute : jours × 24 × 60 × 130 donne le total.',
+    kibbleHow:
+      'Les croquettes, c’est l’appétit quotidien de l’étape en grammes, multiplié par le nombre de jours. C’est la moyenne pour un chat adulte en bonne santé : à prendre comme une estimation.',
+    caveatTitle: 'L’avertissement honnête',
+    caveatBody:
+      'C’est une règle approximative, pas un diagnostic. Le vieillissement réel dépend de la race, de la taille, de l’accès à l’extérieur et des soins. Pour ce qui compte vraiment, demandez à un vétérinaire.',
+    cta: 'Afficher un chat sur le mur',
   },
   form: {
     newTitle: 'Affichez votre chat sur le mur',
@@ -655,7 +834,7 @@ export function createI18n(locale: Locale) {
         : numberFmt.format(Math.round(age.humanYears)),
     formatDate: (iso: string) => formatDate(iso, locale),
     formatNumber: (n: number) => numberFmt.format(n),
-    facts: (age: CatAge) => {
+    factStats: (age: CatAge) => {
       const v = factValues(age)
       return [
         { key: 'days', label: d.facts.days, value: numberFmt.format(v.days) },

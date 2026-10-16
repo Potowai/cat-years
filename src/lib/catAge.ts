@@ -83,13 +83,49 @@ export function verdictTier(humanYears: number): number {
 }
 
 /** Average dry-food (kibble) appetite per day, by life stage. */
-const KIBBLE_GRAMS_PER_DAY: Record<StageId, number> = {
+export const KIBBLE_GRAMS_PER_DAY: Record<StageId, number> = {
   kitten: 40,
   junior: 70,
   adult: 160,
   mature: 145,
   senior: 130,
   geriatric: 120,
+}
+
+/** Daily kibble appetite in grams for a cat's current stage. */
+export function kibbleGramsPerDay(age: CatAge): number {
+  return KIBBLE_GRAMS_PER_DAY[age.stageId]
+}
+
+/** Life stages with their age windows in months (upper bound exclusive). */
+export const STAGE_RANGES: Array<{
+  id: StageId
+  fromMonths: number
+  toMonths: number | null
+}> = [
+  { id: 'kitten', fromMonths: 0, toMonths: 7 },
+  { id: 'junior', fromMonths: 7, toMonths: 25 },
+  { id: 'adult', fromMonths: 25, toMonths: 84 },
+  { id: 'mature', fromMonths: 84, toMonths: 120 },
+  { id: 'senior', fromMonths: 120, toMonths: 180 },
+  { id: 'geriatric', fromMonths: 180, toMonths: null },
+]
+
+const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+
+/** 2026 — the year this tradition was imported — is the letter V. */
+const REFERENCE_YEAR = 2026
+const REFERENCE_INDEX = ALPHABET.indexOf('V')
+
+/**
+ * The letter of the cat year: one letter for every year, cycling through the
+ * alphabet (V in 2026, W in 2027, … then back to A after Z). Kittens born that
+ * year take it as their middle initial.
+ */
+export function catYearLetter(year: number): string {
+  const offset = year - REFERENCE_YEAR
+  const index = (((REFERENCE_INDEX + offset) % 26) + 26) % 26
+  return ALPHABET[index]
 }
 
 export function factValues(age: CatAge) {

@@ -10,6 +10,8 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as CalculAgeRouteImport } from './routes/calcul-age'
+import { Route as LettresAnneesRouteImport } from './routes/lettres-annees'
 import { Route as NewRouteImport } from './routes/new'
 import { Route as ApiUploadRouteImport } from './routes/api.upload'
 import { Route as CatsCatSlugRouteImport } from './routes/cats.$catSlug'
@@ -18,6 +20,16 @@ import { Route as CatsCatSlugEditRouteImport } from './routes/cats.$catSlug.edit
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CalculAgeRoute = CalculAgeRouteImport.update({
+  id: '/calcul-age',
+  path: '/calcul-age',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LettresAnneesRoute = LettresAnneesRouteImport.update({
+  id: '/lettres-annees',
+  path: '/lettres-annees',
   getParentRoute: () => rootRouteImport,
 } as any)
 const NewRoute = NewRouteImport.update({
@@ -43,6 +55,8 @@ const CatsCatSlugEditRoute = CatsCatSlugEditRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/calcul-age': typeof CalculAgeRoute
+  '/lettres-annees': typeof LettresAnneesRoute
   '/new': typeof NewRoute
   '/api/upload': typeof ApiUploadRoute
   '/cats/$catSlug': typeof CatsCatSlugRouteWithChildren
@@ -50,6 +64,8 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/calcul-age': typeof CalculAgeRoute
+  '/lettres-annees': typeof LettresAnneesRoute
   '/new': typeof NewRoute
   '/api/upload': typeof ApiUploadRoute
   '/cats/$catSlug': typeof CatsCatSlugRouteWithChildren
@@ -58,6 +74,8 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/calcul-age': typeof CalculAgeRoute
+  '/lettres-annees': typeof LettresAnneesRoute
   '/new': typeof NewRoute
   '/api/upload': typeof ApiUploadRoute
   '/cats/$catSlug': typeof CatsCatSlugRouteWithChildren
@@ -66,12 +84,27 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/new' | '/api/upload' | '/cats/$catSlug' | '/cats/$catSlug/edit'
+    | '/'
+    | '/calcul-age'
+    | '/lettres-annees'
+    | '/new'
+    | '/api/upload'
+    | '/cats/$catSlug'
+    | '/cats/$catSlug/edit'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/new' | '/api/upload' | '/cats/$catSlug' | '/cats/$catSlug/edit'
+  to:
+    | '/'
+    | '/calcul-age'
+    | '/lettres-annees'
+    | '/new'
+    | '/api/upload'
+    | '/cats/$catSlug'
+    | '/cats/$catSlug/edit'
   id:
     | '__root__'
     | '/'
+    | '/calcul-age'
+    | '/lettres-annees'
     | '/new'
     | '/api/upload'
     | '/cats/$catSlug'
@@ -80,6 +113,8 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CalculAgeRoute: typeof CalculAgeRoute
+  LettresAnneesRoute: typeof LettresAnneesRoute
   NewRoute: typeof NewRoute
   ApiUploadRoute: typeof ApiUploadRoute
   CatsCatSlugRoute: typeof CatsCatSlugRouteWithChildren
@@ -92,6 +127,20 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/calcul-age': {
+      id: '/calcul-age'
+      path: '/calcul-age'
+      fullPath: '/calcul-age'
+      preLoaderRoute: typeof CalculAgeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lettres-annees': {
+      id: '/lettres-annees'
+      path: '/lettres-annees'
+      fullPath: '/lettres-annees'
+      preLoaderRoute: typeof LettresAnneesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/new': {
@@ -139,6 +188,8 @@ const CatsCatSlugRouteWithChildren = CatsCatSlugRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CalculAgeRoute: CalculAgeRoute,
+  LettresAnneesRoute: LettresAnneesRoute,
   NewRoute: NewRoute,
   ApiUploadRoute: ApiUploadRoute,
   CatsCatSlugRoute: CatsCatSlugRouteWithChildren,

@@ -49,7 +49,7 @@ function CatDetail() {
   const i18n = useI18n()
   const cat = Route.useLoaderData()
   const age = computeCatAge(cat.birthdate)
-  const facts = i18n.facts(age)
+  const facts = i18n.factStats(age)
   const coatLabel =
     cat.coat && cat.coat in i18n.form.coats
       ? i18n.form.coats[cat.coat as CoatId]

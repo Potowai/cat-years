@@ -158,6 +158,20 @@ function SiteFooter() {
           {i18n.footer.builtTail}
         </p>
         <p>{i18n.footer.disclaimer}</p>
+        <nav className="flex flex-wrap justify-center gap-4 sm:justify-end">
+          <Link
+            to="/calcul-age"
+            className="font-bold underline decoration-ink/30 underline-offset-4 transition-colors hover:text-ink hover:decoration-ink"
+          >
+            {i18n.footer.howLink}
+          </Link>
+          <Link
+            to="/lettres-annees"
+            className="font-bold underline decoration-ink/30 underline-offset-4 transition-colors hover:text-ink hover:decoration-ink"
+          >
+            {i18n.footer.lettersLink}
+          </Link>
+        </nav>
       </div>
     </footer>
   )
