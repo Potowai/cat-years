@@ -1,0 +1,195 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system,
+    'Segoe UI', sans-serif;
+  --font-display: 'Fraunces', 'Plus Jakarta Sans', ui-serif, Georgia, serif;
+
+  --color-paper: #fbf6ea;
+  --color-cream: #f3e7cf;
+  --color-sand: #e7d9bd;
+  --color-ink: #241d18;
+  --color-ink-soft: #6e6053;
+  --color-line: #e3d5b8;
+  --color-tangerine: #ef6a2f;
+  --color-butter: #f2c34a;
+  --color-sage: #6e9e78;
+  --color-sky: #4a8db8;
+  --color-plum: #8a5a83;
+  --color-blush: #ec9a86;
+
+  --shadow-sticker: 5px 5px 0 0 var(--color-ink);
+  --shadow-sticker-sm: 3px 3px 0 0 var(--color-ink);
+  --shadow-sticker-lg: 8px 8px 0 0 var(--color-ink);
+  --shadow-soft: 0 18px 40px -22px rgba(36, 29, 24, 0.45);
+
+  --radius-blob: 2rem;
+
+  --animate-float: float 7s ease-in-out infinite;
+  --animate-wiggle: wiggle 0.6s ease-in-out;
+  --animate-pop: pop 0.35s cubic-bezier(0.2, 1.2, 0.4, 1) both;
+  --animate-rise: rise 0.6s cubic-bezier(0.2, 0.9, 0.3, 1) both;
+  --animate-shimmer: shimmer 2.4s linear infinite;
+  --animate-marquee: marquee 32s linear infinite;
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-1deg);
+  }
+  50% {
+    transform: translateY(-10px) rotate(1deg);
+  }
+}
+
+@keyframes wiggle {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(-6deg);
+  }
+  75% {
+    transform: rotate(6deg);
+  }
+}
+
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    background-image:
+      radial-gradient(
+        circle at 12% 8%,
+        rgba(242, 195, 74, 0.22),
+        transparent 42%
+      ),
+      radial-gradient(
+        circle at 88% 0%,
+        rgba(236, 154, 134, 0.22),
+        transparent 40%
+      ),
+      radial-gradient(circle at 50% 120%, rgba(110, 158, 120, 0.18), transparent 55%);
+    background-attachment: fixed;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    font-optical-sizing: auto;
+    letter-spacing: -0.02em;
+    line-height: 0.98;
+  }
+
+  ::selection {
+    background: var(--color-butter);
+    color: var(--color-ink);
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--color-sky);
+    outline-offset: 2px;
+  }
+
+  img {
+    -webkit-user-drag: none;
+  }
+}
+
+@layer components {
+  .grain::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    pointer-events: none;
+    opacity: 0.4;
+    mix-blend-mode: multiply;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.22'/%3E%3C/svg%3E");
+  }
+}
+
+.tape {
+  position: relative;
+}
+.tape::before,
+.tape::after {
+  content: '';
+  position: absolute;
+  width: 74px;
+  height: 26px;
+  background: rgba(242, 195, 74, 0.72);
+  box-shadow: 0 1px 2px rgba(36, 29, 24, 0.18);
+}
+.tape::before {
+  top: -14px;
+  left: 18px;
+  transform: rotate(-8deg);
+}
+.tape::after {
+  top: -12px;
+  right: 18px;
+  transform: rotate(7deg);
+}
+
+.dotgrid {
+  background-image: radial-gradient(var(--color-sand) 1.4px, transparent 1.4px);
+  background-size: 18px 18px;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  scrollbar-width: none;
+}

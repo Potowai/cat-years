@@ -1,0 +1,194 @@
+import { createFileRoute, Link } from '@tanstack/react-router'
+import { ArrowRight, Cat, PawPrint } from 'lucide-react'
+import { CatCard } from '~/components/CatCard'
+import { buttonClass, Chip } from '~/components/ui'
+import { computeCatAge } from '~/lib/catAge'
+import { useI18n } from '~/lib/i18n'
+import type { CatSort } from '~/lib/types'
+import { cn } from '~/lib/utils'
+import { listCatsFn } from '~/server/cats.functions'
+
+const SORTS = ['newest', 'oldest', 'senior', 'popular', 'name'] as const
+
+function parseSort(value: unknown): CatSort {
+  return (SORTS as readonly string[]).includes(value as string)
+    ? (value as CatSort)
+    : 'newest'
+}
+
+export const Route = createFileRoute('/')({
+  validateSearch: (search: Record<string, unknown>): { sort?: CatSort } => ({
+    sort: parseSort(search.sort),
+  }),
+  loaderDeps: ({ search }) => ({ sort: search.sort ?? 'newest' }),
+  loader: ({ deps }) => listCatsFn({ data: { sort: deps.sort } }),
+  component: Home,
+})
+
+function Stat({ value, label }: { value: string; label: string }) {
+  return (
+    <div className="rounded-2xl border-2 border-ink bg-paper px-4 py-3 text-center shadow-sticker-sm">
+      <div className="font-display text-3xl font-black leading-none">
+        {value}
+      </div>
+      <div className="mt-1 text-xs font-bold uppercase tracking-wider text-ink-soft">
+        {label}
+      </div>
+    </div>
+  )
+}
+
+function Home() {
+  const i18n = useI18n()
+  const cats = Route.useLoaderData()
+  const sort = Route.useSearch().sort ?? 'newest'
+
+  const totalPurrs = cats.reduce((sum, c) => sum + c.purrs, 0)
+  const ages = cats.map((c) => computeCatAge(c.birthdate))
+  const avgHuman = ages.length
+    ? Math.round(
+        ages.reduce((sum, a) => sum + a.humanYears, 0) / ages.length,
+      )
+    : 0
+  const oldest = ages.reduce<(typeof ages)[number] | null>(
+    (best, a) => (!best || a.humanYears > best.humanYears ? a : best),
+    null,
+  )
+
+  return (
+    <div className="mx-auto max-w-6xl px-5">
+      <section className="relative pt-14 sm:pt-20">
+        <div className="max-w-3xl">
+          <Chip tone="sage" className="animate-pop">
+            {i18n.home.badge}
+          </Chip>
+          <h1 className="mt-5 text-5xl font-black leading-[0.95] sm:text-7xl">
+            {i18n.home.titleBefore}
+            <span className="relative inline-block">
+              <span className="relative z-10 text-tangerine">
+                {i18n.home.titleHighlight}
+              </span>
+              <span className="absolute inset-x-0 bottom-1 z-0 h-3 -rotate-1 rounded-full bg-butter" />
+            </span>
+            {i18n.home.titleAfter}
+          </h1>
+          <p className="mt-5 max-w-xl text-lg font-medium text-ink-soft">
+            {i18n.home.subtitle}
+          </p>
+          <div className="mt-7 flex flex-wrap items-center gap-3">
+            <Link to="/new" className={buttonClass({ size: 'lg' })}>
+              {i18n.home.ctaAdd}
+              <ArrowRight className="size-5" aria-hidden />
+            </Link>
+            {cats.length > 0 ? (
+              <a
+                href="#wall"
+                className={buttonClass({ variant: 'outline', size: 'lg' })}
+              >
+                {i18n.home.ctaSee(cats.length)}
+              </a>
+            ) : null}
+          </div>
+        </div>
+
+        {cats.length > 0 ? (
+          <div className="mt-10 grid max-w-2xl grid-cols-2 gap-3 sm:grid-cols-4">
+            <Stat
+              value={i18n.formatNumber(cats.length)}
+              label={i18n.home.statCats}
+            />
+            <Stat
+              value={i18n.formatNumber(totalPurrs)}
+              label={i18n.home.statPurrs}
+            />
+            <Stat value={`${avgHuman}`} label={i18n.home.statAvg} />
+            <Stat
+              value={oldest ? `${Math.round(oldest.humanYears)}` : '—'}
+              label={i18n.home.statOldest}
+            />
+          </div>
+        ) : null}
+      </section>
+
+      <div
+        aria-hidden="true"
+        className="mt-14 overflow-hidden border-y-2 border-ink/10 bg-ink py-3 text-paper"
+      >
+        <div className="flex w-max animate-marquee gap-8 whitespace-nowrap motion-reduce:animate-none">
+          {Array.from({ length: 2 }).map((_, dup) => (
+            <div key={dup} className="flex gap-8">
+              {i18n.home.marquee.map((line) => (
+                <span
+                  key={line}
+                  className="font-display text-lg font-bold tracking-tight"
+                >
+                  {line}
+                </span>
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <section id="wall" className="scroll-mt-24 pt-12">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h2 className="text-4xl font-black">
+              {i18n.home.wallTitle}{' '}
+              <span className="text-ink-soft/60">/ {i18n.home.sorts[sort]}</span>
+            </h2>
+            <p className="mt-1 font-medium text-ink-soft">
+              {i18n.home.wallHint}
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {SORTS.map((s) => (
+              <Link
+                key={s}
+                to="/"
+                search={{ sort: s }}
+                className={cn(
+                  'rounded-full border-2 border-ink px-3.5 py-1.5 text-sm font-bold transition-colors',
+                  sort === s
+                    ? 'bg-ink text-paper'
+                    : 'bg-paper text-ink hover:bg-cream',
+                )}
+              >
+                {i18n.home.sorts[s]}
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        {cats.length === 0 ? (
+          <EmptyWall />
+        ) : (
+          <div className="mt-8 columns-2 gap-5 md:columns-3 lg:columns-4">
+            {cats.map((cat, i) => (
+              <CatCard key={cat.id} cat={cat} index={i} />
+            ))}
+          </div>
+        )}
+      </section>
+    </div>
+  )
+}
+
+function EmptyWall() {
+  const i18n = useI18n()
+  return (
+    <div className="mt-8 grid place-items-center rounded-[28px] border-2 border-dashed border-ink/40 bg-cream/40 px-6 py-20 text-center">
+      <div className="grid size-20 place-items-center rounded-3xl border-2 border-ink bg-butter text-4xl shadow-sticker-sm animate-float motion-reduce:animate-none">
+        <Cat className="size-10" aria-hidden />
+      </div>
+      <h3 className="mt-6 text-3xl font-black">{i18n.home.emptyTitle}</h3>
+      <p className="mt-2 max-w-md font-medium text-ink-soft">
+        {i18n.home.emptyText}
+      </p>
+      <Link to="/new" className={buttonClass({ className: 'mt-6' })}>
+        <PawPrint className="size-5" aria-hidden />
+        {i18n.home.emptyCta}
+      </Link>
+    </div>
+  )
+}

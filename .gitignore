@@ -1,0 +1,22 @@
+node_modules
+.DS_Store
+dist
+.output
+.vercel
+.vinxi
+.env
+.env.*
+!.env.example
+
+# local data / uploads (dev fallbacks)
+.pglite
+public/uploads
+
+# logs
+*.log
+npm-debug.log*
+
+# editor
+.vscode/*
+!.vscode/extensions.json
+.idea
