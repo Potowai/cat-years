@@ -154,16 +154,21 @@ function CatDetail() {
           <h2 className="mt-8 text-2xl font-black">
             {i18n.detail.scientific}
           </h2>
-          <dl className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+          <dl className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
             {facts.map((fact) => (
               <div
                 key={fact.key}
-                className="rounded-2xl border-2 border-ink bg-paper px-3 py-3 text-center shadow-sticker-sm"
+                className="min-w-0 rounded-2xl border-2 border-ink bg-paper px-3 py-3 text-center shadow-sticker-sm"
               >
-                <dd className="font-display text-2xl font-black leading-none">
-                  {fact.value}
+                <dd className="flex flex-wrap items-baseline justify-center gap-x-1 font-display text-2xl font-black leading-none">
+                  <span className="tabular-nums">{fact.value}</span>
+                  {fact.unit ? (
+                    <span className="text-sm font-black text-ink-soft">
+                      {fact.unit}
+                    </span>
+                  ) : null}
                 </dd>
-                <dt className="mt-1.5 text-[11px] font-bold uppercase leading-tight tracking-wide text-ink-soft">
+                <dt className="mt-1.5 break-words text-[10px] font-bold uppercase leading-tight tracking-wide text-ink-soft">
                   {fact.label}
                 </dt>
               </div>

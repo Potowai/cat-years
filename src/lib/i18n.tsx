@@ -851,13 +851,24 @@ export function createI18n(locale: Locale) {
   })
 
   /** Grams → a readable mass in kg, switching to tonnes for legendary appetites. */
-  function formatKibble(grams: number): string {
+  function formatKibble(grams: number): { value: string; unit: string } {
     if (grams >= 1_000_000) {
       const tonnes = Math.round(grams / 10_000) / 100
-      return `${kgFmt.format(tonnes)} t`
+      return { value: kgFmt.format(tonnes), unit: 't' }
     }
     const kg = Math.round(grams / 100) / 10
-    return `${kgFmt.format(kg)} kg`
+    return { value: kgFmt.format(kg), unit: 'kg' }
+  }
+
+  /** Splits a compact number ("409,2 M") into its number and its unit ("M"). */
+  function compact(n: number): { value: string; unit: string } {
+    let value = ''
+    let unit = ''
+    for (const part of compactFmt.formatToParts(n)) {
+      if (part.type === 'compact') unit = part.value
+      else if (part.type !== 'literal') value += part.value
+    }
+    return { value, unit }
   }
 
   return {
@@ -886,23 +897,35 @@ export function createI18n(locale: Locale) {
     formatNumber: (n: number) => numberFmt.format(n),
     factStats: (age: CatAge) => {
       const v = factValues(age)
+      const napHours = compact(v.napHours)
+      const naps = compact(v.naps)
+      const beats = compact(v.heartbeats)
+      const kibble = formatKibble(v.kibbleGrams)
       return [
-        { key: 'days', label: d.facts.days, value: numberFmt.format(v.days) },
+        {
+          key: 'days',
+          label: d.facts.days,
+          value: numberFmt.format(v.days),
+          unit: '',
+        },
         {
           key: 'napHours',
           label: d.facts.napHours,
-          value: compactFmt.format(v.napHours),
+          value: napHours.value,
+          unit: napHours.unit,
         },
-        { key: 'naps', label: d.facts.naps, value: compactFmt.format(v.naps) },
+        { key: 'naps', label: d.facts.naps, value: naps.value, unit: naps.unit },
         {
           key: 'heartbeats',
           label: d.facts.heartbeats,
-          value: compactFmt.format(v.heartbeats),
+          value: beats.value,
+          unit: beats.unit,
         },
         {
           key: 'kibble',
           label: d.facts.kibble,
-          value: formatKibble(v.kibbleGrams),
+          value: kibble.value,
+          unit: kibble.unit,
         },
       ]
     },
