@@ -16,15 +16,12 @@ type Verdict = (name: string) => string
 
 export type Dict = {
   langLabel: string
-  nav: { wall: string; addCat: string; myCats: string }
+  nav: { wall: string; addCat: string; myCats: string; how: string; letters: string }
   footer: {
     builtLead: string
     brand: string
     builtTail: string
     disclaimer: string
-    howLink: string
-    lettersLink: string
-    myCatsLink: string
   }
   letters: {
     badge: string
@@ -233,15 +230,18 @@ export type Dict = {
 
 const en: Dict = {
   langLabel: 'Language',
-  nav: { wall: 'The wall', addCat: 'Add your cat', myCats: 'My cats' },
+  nav: {
+    wall: 'The wall',
+    addCat: 'Add your cat',
+    myCats: 'My cats',
+    how: 'Age maths',
+    letters: 'Year letters',
+  },
   footer: {
     builtLead: 'Built for cats who do not care, with',
     brand: 'TanStack',
     builtTail: 'on Vercel.',
     disclaimer: 'Age math is an approximation. Cats are, medically, a mystery.',
-    howLink: 'How the age maths works',
-    lettersLink: 'The cat year letters',
-    myCatsLink: 'My cats',
   },
   letters: {
     badge: 'One letter, one year, one cat',
@@ -567,16 +567,19 @@ const en: Dict = {
 
 const fr: Dict = {
   langLabel: 'Langue',
-  nav: { wall: 'Le mur', addCat: 'Ajouter votre chat', myCats: 'Mes chats' },
+  nav: {
+    wall: 'Le mur',
+    addCat: 'Ajouter votre chat',
+    myCats: 'Mes chats',
+    how: 'Calcul de l’âge',
+    letters: 'Lettres des années',
+  },
   footer: {
     builtLead: 'Conçu pour des chats qui s’en fichent, avec',
     brand: 'TanStack',
     builtTail: 'sur Vercel.',
     disclaimer:
       'Le calcul d’âge est une approximation. Les chats sont, médicalement, un mystère.',
-    howLink: 'Comment se calcule l’âge',
-    lettersLink: 'Les lettres des années',
-    myCatsLink: 'Mes chats',
   },
   letters: {
     badge: 'Une lettre, une année, un chat',

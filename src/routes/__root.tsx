@@ -109,11 +109,35 @@ function LocaleToggle() {
   )
 }
 
+function NavLink({
+  to,
+  exact,
+  children,
+}: {
+  to: string
+  exact?: boolean
+  children: React.ReactNode
+}) {
+  return (
+    <Link
+      to={to}
+      activeOptions={exact ? { exact: true } : undefined}
+      className="rounded-full px-2 py-1.5 text-xs font-bold text-ink-soft transition-colors hover:bg-cream hover:text-ink sm:px-2.5 sm:text-sm"
+      activeProps={{
+        className:
+          'rounded-full px-2 py-1.5 text-xs font-bold bg-cream text-ink sm:px-2.5 sm:text-sm',
+      }}
+    >
+      {children}
+    </Link>
+  )
+}
+
 function SiteHeader() {
   const i18n = useI18n()
   return (
     <header className="sticky top-0 z-50 border-b-2 border-ink/10 bg-paper/85 backdrop-blur-md">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-3.5">
+      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-4 gap-y-2 px-5 py-3">
         <Link to="/" className="flex items-center gap-2.5">
           <span className="grid size-10 place-items-center rounded-2xl border-2 border-ink bg-butter text-xl shadow-sticker-sm">
             🐾
@@ -122,21 +146,16 @@ function SiteHeader() {
             Cat Years
           </span>
         </Link>
-        <nav className="flex items-center gap-2">
-          <Link
-            to="/"
-            activeOptions={{ exact: true }}
-            className="hidden rounded-full px-3.5 py-2 text-sm font-bold text-ink-soft transition-colors hover:bg-cream hover:text-ink sm:block"
-            activeProps={{
-              className:
-                'hidden sm:block rounded-full px-3.5 py-2 text-sm font-bold text-ink bg-cream',
-            }}
-          >
+        <nav className="flex flex-wrap items-center justify-end gap-1">
+          <NavLink to="/" exact>
             {i18n.nav.wall}
-          </Link>
+          </NavLink>
+          <NavLink to="/mes-chats">{i18n.nav.myCats}</NavLink>
+          <NavLink to="/calcul-age">{i18n.nav.how}</NavLink>
+          <NavLink to="/lettres-annees">{i18n.nav.letters}</NavLink>
           <Link
             to="/new"
-            className="inline-flex items-center gap-1.5 rounded-full border-2 border-ink bg-tangerine px-4 py-2 text-sm font-bold text-paper shadow-sticker-sm transition-transform hover:-translate-y-0.5 active:translate-y-0"
+            className="ml-1 inline-flex items-center gap-1.5 rounded-full border-2 border-ink bg-tangerine px-3 py-1.5 text-xs font-bold text-paper shadow-sticker-sm transition-transform hover:-translate-y-0.5 active:translate-y-0 sm:px-4 sm:py-2 sm:text-sm"
           >
             {i18n.nav.addCat}
           </Link>
@@ -158,26 +177,6 @@ function SiteFooter() {
           {i18n.footer.builtTail}
         </p>
         <p>{i18n.footer.disclaimer}</p>
-        <nav className="flex flex-wrap justify-center gap-4 sm:justify-end">
-          <Link
-            to="/mes-chats"
-            className="font-bold underline decoration-ink/30 underline-offset-4 transition-colors hover:text-ink hover:decoration-ink"
-          >
-            {i18n.footer.myCatsLink}
-          </Link>
-          <Link
-            to="/calcul-age"
-            className="font-bold underline decoration-ink/30 underline-offset-4 transition-colors hover:text-ink hover:decoration-ink"
-          >
-            {i18n.footer.howLink}
-          </Link>
-          <Link
-            to="/lettres-annees"
-            className="font-bold underline decoration-ink/30 underline-offset-4 transition-colors hover:text-ink hover:decoration-ink"
-          >
-            {i18n.footer.lettersLink}
-          </Link>
-        </nav>
       </div>
     </footer>
   )
