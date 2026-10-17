@@ -16,7 +16,7 @@ type Verdict = (name: string) => string
 
 export type Dict = {
   langLabel: string
-  nav: { wall: string; addCat: string }
+  nav: { wall: string; addCat: string; myCats: string }
   footer: {
     builtLead: string
     brand: string
@@ -24,6 +24,7 @@ export type Dict = {
     disclaimer: string
     howLink: string
     lettersLink: string
+    myCatsLink: string
   }
   letters: {
     badge: string
@@ -82,6 +83,7 @@ export type Dict = {
     copyLink: string
     linkCopied: string
     linkHint: string
+    byOwner: (name: string) => string
     edit: string
     delete: string
     confirmDelete: string
@@ -125,6 +127,27 @@ export type Dict = {
     caveatTitle: string
     caveatBody: string
     cta: string
+  }
+  myCats: {
+    badge: string
+    title: string
+    intro: string
+    empty: string
+    emptyCta: string
+    count: (n: number) => string
+    view: string
+    pseudoTitle: string
+    pseudoLabel: string
+    pseudoPlaceholder: string
+    pseudoHint: string
+    save: string
+    saved: string
+    linkTitle: string
+    copyLink: string
+    linkCopied: string
+    linkHint: string
+    claimed: (n: number) => string
+    loading: string
   }
   form: {
     newTitle: string
@@ -210,7 +233,7 @@ export type Dict = {
 
 const en: Dict = {
   langLabel: 'Language',
-  nav: { wall: 'The wall', addCat: 'Add your cat' },
+  nav: { wall: 'The wall', addCat: 'Add your cat', myCats: 'My cats' },
   footer: {
     builtLead: 'Built for cats who do not care, with',
     brand: 'TanStack',
@@ -218,6 +241,7 @@ const en: Dict = {
     disclaimer: 'Age math is an approximation. Cats are, medically, a mystery.',
     howLink: 'How the age maths works',
     lettersLink: 'The cat year letters',
+    myCatsLink: 'My cats',
   },
   letters: {
     badge: 'One letter, one year, one cat',
@@ -301,6 +325,7 @@ const en: Dict = {
     linkCopied: 'Editing link copied!',
     linkHint:
       'Keep this private link: it lets you edit this cat from any device, any browser.',
+    byOwner: (name) => `by ${name}`,
     edit: 'Edit',
     delete: 'Delete',
     confirmDelete: 'Yes, remove my cat',
@@ -356,6 +381,30 @@ const en: Dict = {
     caveatBody:
       'This is a rule of thumb, not a diagnosis. Real ageing depends on breed, size, whether a cat goes outside, and how well they are looked after. For anything that actually matters, ask a vet.',
     cta: 'Put a cat on the wall',
+  },
+  myCats: {
+    badge: 'Your cats, one key',
+    title: 'My cats',
+    intro:
+      'Every cat you added from this browser, gathered in one place. One private key covers them all — copy the owner link to get the same list on any other device.',
+    empty:
+      'No cats on this device yet. Add one and it will show up here, with its editing shortcuts.',
+    emptyCta: 'Add a cat',
+    count: (n) => (n === 1 ? '1 cat' : `${n} cats`),
+    view: 'View',
+    pseudoTitle: 'Your name (optional)',
+    pseudoLabel: 'Name',
+    pseudoPlaceholder: 'e.g. Marie',
+    pseudoHint: 'Shown on your cats’ pages as “by Marie”. Leave empty to stay anonymous.',
+    save: 'Save',
+    saved: 'Saved!',
+    linkTitle: 'Your private owner link',
+    copyLink: 'Copy owner link',
+    linkCopied: 'Owner link copied!',
+    linkHint:
+      'This one link unlocks all of your cats on any device. Treat it like a password and keep it somewhere safe.',
+    claimed: (n) => (n === 1 ? '1 older cat linked' : `${n} older cats linked`),
+    loading: 'Loading…',
   },
   form: {
     newTitle: 'Put your cat on the wall',
@@ -518,7 +567,7 @@ const en: Dict = {
 
 const fr: Dict = {
   langLabel: 'Langue',
-  nav: { wall: 'Le mur', addCat: 'Ajouter votre chat' },
+  nav: { wall: 'Le mur', addCat: 'Ajouter votre chat', myCats: 'Mes chats' },
   footer: {
     builtLead: 'Conçu pour des chats qui s’en fichent, avec',
     brand: 'TanStack',
@@ -527,6 +576,7 @@ const fr: Dict = {
       'Le calcul d’âge est une approximation. Les chats sont, médicalement, un mystère.',
     howLink: 'Comment se calcule l’âge',
     lettersLink: 'Les lettres des années',
+    myCatsLink: 'Mes chats',
   },
   letters: {
     badge: 'Une lettre, une année, un chat',
@@ -610,6 +660,7 @@ const fr: Dict = {
     linkCopied: 'Lien d’édition copié !',
     linkHint:
       'Gardez ce lien privé : il permet de modifier ce chat depuis n’importe quel appareil ou navigateur.',
+    byOwner: (name) => `par ${name}`,
     edit: 'Modifier',
     delete: 'Supprimer',
     confirmDelete: 'Oui, retirer mon chat',
@@ -665,6 +716,32 @@ const fr: Dict = {
     caveatBody:
       'C’est une règle approximative, pas un diagnostic. Le vieillissement réel dépend de la race, de la taille, de l’accès à l’extérieur et des soins. Pour ce qui compte vraiment, demandez à un vétérinaire.',
     cta: 'Afficher un chat sur le mur',
+  },
+  myCats: {
+    badge: 'Vos chats, une clé',
+    title: 'Mes chats',
+    intro:
+      'Tous les chats que vous avez ajoutés depuis ce navigateur, réunis au même endroit. Une seule clé privée les couvre tous — copiez le lien propriétaire pour retrouver la même liste sur un autre appareil.',
+    empty:
+      'Aucun chat sur cet appareil pour l’instant. Ajoutez-en un : il apparaîtra ici, avec ses raccourcis d’édition.',
+    emptyCta: 'Ajouter un chat',
+    count: (n) => (n === 1 ? '1 chat' : `${n} chats`),
+    view: 'Voir',
+    pseudoTitle: 'Votre nom (facultatif)',
+    pseudoLabel: 'Nom',
+    pseudoPlaceholder: 'ex. Marie',
+    pseudoHint:
+      'Affiché sur les pages de vos chats sous la forme « par Marie ». Laissez vide pour rester anonyme.',
+    save: 'Enregistrer',
+    saved: 'Enregistré !',
+    linkTitle: 'Votre lien propriétaire privé',
+    copyLink: 'Copier le lien propriétaire',
+    linkCopied: 'Lien propriétaire copié !',
+    linkHint:
+      'Ce seul lien déverrouille tous vos chats sur n’importe quel appareil. Traitez-le comme un mot de passe et gardez-le en lieu sûr.',
+    claimed: (n) =>
+      n === 1 ? '1 ancien chat rattaché' : `${n} anciens chats rattachés`,
+    loading: 'Chargement…',
   },
   form: {
     newTitle: 'Affichez votre chat sur le mur',

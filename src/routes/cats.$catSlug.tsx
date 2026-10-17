@@ -110,6 +110,11 @@ function CatDetail() {
           <h1 className="mt-5 text-5xl font-black sm:text-6xl">
             {i18n.detail.reportCard(cat.name)}
           </h1>
+          {cat.ownerName ? (
+            <p className="mt-2 text-sm font-bold text-ink-soft">
+              {i18n.detail.byOwner(cat.ownerName)}
+            </p>
+          ) : null}
           <p className="mt-4 text-lg font-medium text-ink-soft">
             {i18n.stageBlurb(age.stageId)}
           </p>

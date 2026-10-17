@@ -50,3 +50,45 @@ export function getOwnership(catId: string): string | null {
 export function isOwner(catId: string): boolean {
   return getOwnership(catId) !== null
 }
+
+// --- Owner-wide identity -------------------------------------------------
+// One secret per browser (and one optional pseudo) so a single link unlocks
+// every cat that owner added, on any device.
+
+const OWNER_KEY = 'cat-years:owner'
+const OWNER_NAME_KEY = 'cat-years:owner-name'
+
+export function getOwnerToken(): string {
+  if (typeof localStorage === 'undefined') return ''
+  let token = localStorage.getItem(OWNER_KEY)
+  if (!token) {
+    token = createToken()
+    localStorage.setItem(OWNER_KEY, token)
+  }
+  return token
+}
+
+export function setOwnerToken(token: string): void {
+  if (typeof localStorage === 'undefined') return
+  localStorage.setItem(OWNER_KEY, token)
+}
+
+export function getOwnerName(): string {
+  if (typeof localStorage === 'undefined') return ''
+  return localStorage.getItem(OWNER_NAME_KEY) ?? ''
+}
+
+export function rememberOwnerName(name: string): void {
+  if (typeof localStorage === 'undefined') return
+  localStorage.setItem(OWNER_NAME_KEY, name)
+}
+
+/** Ids of the cats this browser has a per-cat token for (all ages). */
+export function listOwnedIds(): string[] {
+  return Object.keys(readOwned())
+}
+
+/** Forget every per-cat token, e.g. after they were all claimed by an owner. */
+export function forgetAllOwnership(): void {
+  writeOwned({})
+}

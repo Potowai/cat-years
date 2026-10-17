@@ -6,7 +6,7 @@ import { checkIsCat, type Prediction } from '~/lib/catCheck'
 import { celebrate } from '~/lib/confetti'
 import { useI18n } from '~/lib/i18n'
 import { validateImage } from '~/lib/image'
-import { rememberOwnership } from '~/lib/tokens'
+import { rememberOwnership, getOwnerToken, getOwnerName } from '~/lib/tokens'
 import {
   COAT_OPTIONS,
   MAX_PHOTOS,
@@ -169,7 +169,13 @@ export function CatForm({ mode, initial, token }: CatFormProps) {
       }
 
       if (mode === 'create') {
-        const { cat, token: newToken } = await createCatFn({ data: payload })
+        const { cat, token: newToken } = await createCatFn({
+          data: {
+            ...payload,
+            ownerToken: getOwnerToken(),
+            ownerName: getOwnerName() || undefined,
+          },
+        })
         rememberOwnership(cat.id, newToken)
         void celebrate()
         await navigate({

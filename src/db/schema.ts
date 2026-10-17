@@ -24,13 +24,21 @@ export const cats = pgTable(
     bio: text('bio'),
     coat: text('coat'),
     purrs: integer('purrs').notNull().default(0),
+    /** Per-cat secret, kept for the original single-cat editing flow. */
     editTokenHash: text('edit_token_hash').notNull(),
+    /** One secret per owner: unlocks every cat they added, on any device. */
+    ownerTokenHash: text('owner_token_hash'),
+    /** Optional public display name of the owner ("par Marie"). */
+    ownerName: text('owner_name'),
     ipHash: text('ip_hash'),
     createdAt: timestamp('created_at', { withTimezone: true })
       .notNull()
       .defaultNow(),
   },
-  (table) => [index('cats_created_at_idx').on(table.createdAt)],
+  (table) => [
+    index('cats_created_at_idx').on(table.createdAt),
+    index('cats_owner_token_idx').on(table.ownerTokenHash),
+  ],
 )
 
 export type CatRow = typeof cats.$inferSelect

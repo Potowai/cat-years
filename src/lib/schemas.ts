@@ -42,9 +42,30 @@ export const catInputSchema = z.object({
 
 export type CatInput = z.infer<typeof catInputSchema>
 
+const ownerTokenSchema = z.string().trim().min(10).max(200)
+
+export const catCreateSchema = catInputSchema.extend({
+  ownerToken: ownerTokenSchema.optional(),
+  ownerName: z.string().trim().max(40).optional(),
+})
+
 export const catUpdateSchema = catInputSchema.extend({
   slug: z.string().min(1),
   token: z.string().min(10),
+})
+
+export const ownerListSchema = z.object({ ownerToken: ownerTokenSchema })
+
+export const ownerNameSchema = z.object({
+  ownerToken: ownerTokenSchema,
+  ownerName: z.string().trim().max(40),
+})
+
+export const claimCatSchema = z.object({
+  id: z.string().min(1),
+  token: z.string().min(10),
+  ownerToken: ownerTokenSchema,
+  ownerName: z.string().trim().max(40).optional(),
 })
 
 export const catTokenSchema = z.object({

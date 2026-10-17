@@ -18,6 +18,7 @@ function toDTO(row: CatRow): CatDTO {
     photos,
     bio: row.bio,
     coat: row.coat,
+    ownerName: row.ownerName,
     purrs: row.purrs,
     createdAt: row.createdAt.toISOString(),
   }
@@ -102,6 +103,8 @@ export async function insertCat(input: {
   bio?: string
   coat?: string
   ipHash?: string
+  ownerTokenHash?: string
+  ownerName?: string
 }): Promise<{ cat: CatDTO; token: string }> {
   const db = await getDb()
   const id = crypto.randomUUID()
@@ -127,6 +130,8 @@ export async function insertCat(input: {
           bio: input.bio?.trim() ? input.bio.trim() : null,
           coat: input.coat ?? null,
           editTokenHash: tokenHash,
+          ownerTokenHash: input.ownerTokenHash ?? null,
+          ownerName: input.ownerName?.trim() ? input.ownerName.trim() : null,
           ipHash: input.ipHash ?? null,
         })
         .returning()
@@ -145,10 +150,76 @@ async function assertOwner(slug: string, token: string): Promise<CatRow> {
   const row = rows[0]
   if (!row) throw new Error(ERR.CAT_GONE)
   const hash = await hashToken(token)
-  if (hash !== row.editTokenHash) {
+  // Either the per-cat token or the owner-wide token grants access.
+  if (hash !== row.editTokenHash && hash !== row.ownerTokenHash) {
     throw new Error(ERR.NOT_OWNER)
   }
   return row
+}
+
+/** Every cat added by one owner token, newest first. */
+export async function listCatsByOwner(
+  ownerToken: string,
+): Promise<CatDTO[]> {
+  const db = await getDb()
+  const hash = await hashToken(ownerToken)
+  const rows = await db
+    .select()
+    .from(cats)
+    .where(eq(cats.ownerTokenHash, hash))
+    .orderBy(desc(cats.createdAt))
+    .limit(200)
+  return rows.map(toDTO)
+}
+
+/**
+ * Attaches a cat to an owner token, proven with that cat's own token. Used to
+ * bring cats created before owner tokens existed under one owner.
+ */
+export async function claimCat(input: {
+  id: string
+  token: string
+  ownerToken: string
+  ownerName?: string
+}): Promise<CatDTO | null> {
+  const db = await getDb()
+  const found = await db
+    .select()
+    .from(cats)
+    .where(eq(cats.id, input.id))
+    .limit(1)
+  const row = found[0]
+  if (!row) return null
+  const hash = await hashToken(input.token)
+  if (hash !== row.editTokenHash) throw new Error(ERR.NOT_OWNER)
+  const ownerHash = await hashToken(input.ownerToken)
+  if (row.ownerTokenHash === ownerHash) return toDTO(row)
+  const rows = await db
+    .update(cats)
+    .set({
+      ownerTokenHash: ownerHash,
+      ownerName: input.ownerName?.trim()
+        ? input.ownerName.trim()
+        : row.ownerName,
+    })
+    .where(eq(cats.id, input.id))
+    .returning()
+  return toDTO(rows[0])
+}
+
+/** Sets the public pseudo for every cat of one owner. */
+export async function setOwnerName(input: {
+  ownerToken: string
+  ownerName: string
+}): Promise<number> {
+  const db = await getDb()
+  const hash = await hashToken(input.ownerToken)
+  const rows = await db
+    .update(cats)
+    .set({ ownerName: input.ownerName.trim() || null })
+    .where(eq(cats.ownerTokenHash, hash))
+    .returning({ id: cats.id })
+  return rows.length
 }
 
 export async function updateCat(input: {

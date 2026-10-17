@@ -12,6 +12,8 @@ export type CatDTO = {
   photos: string[]
   bio: string | null
   coat: string | null
+  /** Public display name of the owner, if they set one. */
+  ownerName: string | null
   purrs: number
   createdAt: string
 }

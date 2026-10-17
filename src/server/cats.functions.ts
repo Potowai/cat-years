@@ -4,7 +4,14 @@ import { z } from 'zod'
 import * as repo from '~/db/cats.server'
 import { ERR } from '~/lib/errors'
 import { hashToken } from '~/lib/tokens'
-import { catInputSchema, catTokenSchema, catUpdateSchema } from '~/lib/schemas'
+import {
+  catCreateSchema,
+  catTokenSchema,
+  catUpdateSchema,
+  claimCatSchema,
+  ownerListSchema,
+  ownerNameSchema,
+} from '~/lib/schemas'
 
 const sortSchema = z.object({
   sort: z
@@ -62,12 +69,35 @@ export const getCatFn = createServerFn({ method: 'GET' })
   .handler(async ({ data }) => repo.getCatBySlug(data.slug))
 
 export const createCatFn = createServerFn({ method: 'POST' })
-  .validator(catInputSchema)
+  .validator(catCreateSchema)
   .handler(async ({ data }) => {
     const ipHash = await ipHashFromRequest()
     await enforceCreateLimits(ipHash)
-    return repo.insertCat({ ...data, ipHash: ipHash ?? undefined })
+    const { ownerToken, ownerName, ...cat } = data
+    return repo.insertCat({
+      ...cat,
+      ipHash: ipHash ?? undefined,
+      ownerTokenHash: ownerToken ? await hashToken(ownerToken) : undefined,
+      ownerName,
+    })
   })
+
+/** Every cat belonging to one owner token (used by the "my cats" page). */
+export const listMyCatsFn = createServerFn({ method: 'GET' })
+  .validator(ownerListSchema)
+  .handler(async ({ data }) => repo.listCatsByOwner(data.ownerToken))
+
+/** Attaches an existing cat to the browser's owner token, proving it with the cat's own token. */
+export const claimCatFn = createServerFn({ method: 'POST' })
+  .validator(claimCatSchema)
+  .handler(async ({ data }) => repo.claimCat(data))
+
+/** Sets the owner's public pseudo across all of their cats. */
+export const setOwnerNameFn = createServerFn({ method: 'POST' })
+  .validator(ownerNameSchema)
+  .handler(async ({ data }) => ({
+    updated: await repo.setOwnerName(data),
+  }))
 
 export const updateCatFn = createServerFn({ method: 'POST' })
   .validator(catUpdateSchema)

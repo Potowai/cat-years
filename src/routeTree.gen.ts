@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CalculAgeRouteImport } from './routes/calcul-age'
 import { Route as LettresAnneesRouteImport } from './routes/lettres-annees'
+import { Route as MesChatsRouteImport } from './routes/mes-chats'
 import { Route as NewRouteImport } from './routes/new'
 import { Route as ApiUploadRouteImport } from './routes/api.upload'
 import { Route as CatsCatSlugRouteImport } from './routes/cats.$catSlug'
@@ -30,6 +31,11 @@ const CalculAgeRoute = CalculAgeRouteImport.update({
 const LettresAnneesRoute = LettresAnneesRouteImport.update({
   id: '/lettres-annees',
   path: '/lettres-annees',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MesChatsRoute = MesChatsRouteImport.update({
+  id: '/mes-chats',
+  path: '/mes-chats',
   getParentRoute: () => rootRouteImport,
 } as any)
 const NewRoute = NewRouteImport.update({
@@ -57,6 +63,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/calcul-age': typeof CalculAgeRoute
   '/lettres-annees': typeof LettresAnneesRoute
+  '/mes-chats': typeof MesChatsRoute
   '/new': typeof NewRoute
   '/api/upload': typeof ApiUploadRoute
   '/cats/$catSlug': typeof CatsCatSlugRoute
@@ -66,6 +73,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/calcul-age': typeof CalculAgeRoute
   '/lettres-annees': typeof LettresAnneesRoute
+  '/mes-chats': typeof MesChatsRoute
   '/new': typeof NewRoute
   '/api/upload': typeof ApiUploadRoute
   '/cats/$catSlug': typeof CatsCatSlugRoute
@@ -76,6 +84,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/calcul-age': typeof CalculAgeRoute
   '/lettres-annees': typeof LettresAnneesRoute
+  '/mes-chats': typeof MesChatsRoute
   '/new': typeof NewRoute
   '/api/upload': typeof ApiUploadRoute
   '/cats/$catSlug': typeof CatsCatSlugRoute
@@ -87,6 +96,7 @@ export interface FileRouteTypes {
     | '/'
     | '/calcul-age'
     | '/lettres-annees'
+    | '/mes-chats'
     | '/new'
     | '/api/upload'
     | '/cats/$catSlug'
@@ -96,6 +106,7 @@ export interface FileRouteTypes {
     | '/'
     | '/calcul-age'
     | '/lettres-annees'
+    | '/mes-chats'
     | '/new'
     | '/api/upload'
     | '/cats/$catSlug'
@@ -105,6 +116,7 @@ export interface FileRouteTypes {
     | '/'
     | '/calcul-age'
     | '/lettres-annees'
+    | '/mes-chats'
     | '/new'
     | '/api/upload'
     | '/cats/$catSlug'
@@ -115,6 +127,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CalculAgeRoute: typeof CalculAgeRoute
   LettresAnneesRoute: typeof LettresAnneesRoute
+  MesChatsRoute: typeof MesChatsRoute
   NewRoute: typeof NewRoute
   ApiUploadRoute: typeof ApiUploadRoute
   CatsCatSlugRoute: typeof CatsCatSlugRoute
@@ -142,6 +155,13 @@ declare module '@tanstack/react-router' {
       path: '/lettres-annees'
       fullPath: '/lettres-annees'
       preLoaderRoute: typeof LettresAnneesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mes-chats': {
+      id: '/mes-chats'
+      path: '/mes-chats'
+      fullPath: '/mes-chats'
+      preLoaderRoute: typeof MesChatsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/new': {
@@ -179,6 +199,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CalculAgeRoute: CalculAgeRoute,
   LettresAnneesRoute: LettresAnneesRoute,
+  MesChatsRoute: MesChatsRoute,
   NewRoute: NewRoute,
   ApiUploadRoute: ApiUploadRoute,
   CatsCatSlugRoute: CatsCatSlugRoute,

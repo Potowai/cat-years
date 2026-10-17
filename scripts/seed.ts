@@ -23,12 +23,16 @@ CREATE TABLE IF NOT EXISTS cats (
   coat text,
   purrs integer NOT NULL DEFAULT 0,
   edit_token_hash text NOT NULL,
+  owner_token_hash text,
+  owner_name text,
   ip_hash text,
   created_at timestamptz NOT NULL DEFAULT now()
 );
 CREATE UNIQUE INDEX IF NOT EXISTS cats_slug_idx ON cats (slug);
 CREATE INDEX IF NOT EXISTS cats_created_at_idx ON cats (created_at);
 ALTER TABLE cats ADD COLUMN IF NOT EXISTS photos text[] NOT NULL DEFAULT '{}';
+ALTER TABLE cats ADD COLUMN IF NOT EXISTS owner_token_hash text;
+ALTER TABLE cats ADD COLUMN IF NOT EXISTS owner_name text;
 `
 
 async function main() {
