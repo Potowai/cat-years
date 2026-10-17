@@ -6,7 +6,12 @@ import { checkIsCat, type Prediction } from '~/lib/catCheck'
 import { celebrate } from '~/lib/confetti'
 import { useI18n } from '~/lib/i18n'
 import { validateImage } from '~/lib/image'
-import { rememberOwnership, getOwnerToken, getOwnerName } from '~/lib/tokens'
+import {
+  rememberOwnership,
+  getOwnerToken,
+  getOwnerName,
+  rememberOwnerName,
+} from '~/lib/tokens'
 import {
   COAT_OPTIONS,
   MAX_PHOTOS,
@@ -51,6 +56,7 @@ export function CatForm({ mode, initial, token }: CatFormProps) {
     (initial?.coat as CoatId | null) ?? undefined,
   )
   const [bio, setBio] = useState(initial?.bio ?? '')
+  const [ownerName, setOwnerName] = useState(() => getOwnerName())
   const [dragging, setDragging] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -169,11 +175,12 @@ export function CatForm({ mode, initial, token }: CatFormProps) {
       }
 
       if (mode === 'create') {
+        rememberOwnerName(ownerName.trim())
         const { cat, token: newToken } = await createCatFn({
           data: {
             ...payload,
             ownerToken: getOwnerToken(),
-            ownerName: getOwnerName() || undefined,
+            ownerName: ownerName.trim() || undefined,
           },
         })
         rememberOwnership(cat.id, newToken)
@@ -399,6 +406,24 @@ export function CatForm({ mode, initial, token }: CatFormProps) {
             placeholder={i18n.form.bioPlaceholder}
           />
         </div>
+
+        {mode === 'create' ? (
+          <div>
+            <Label htmlFor="owner-name" hint={i18n.form.coatOptional}>
+              {i18n.myCats.pseudoTitle}
+            </Label>
+            <Input
+              id="owner-name"
+              value={ownerName}
+              maxLength={40}
+              onChange={(e) => setOwnerName(e.target.value)}
+              placeholder={i18n.myCats.pseudoPlaceholder}
+            />
+            <p className="mt-2 text-xs font-medium text-ink-soft">
+              {i18n.myCats.pseudoHint}
+            </p>
+          </div>
+        ) : null}
       </div>
 
       <aside className="lg:sticky lg:top-24">

@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { Images, PawPrint } from 'lucide-react'
+import { Images, PawPrint, UserRound } from 'lucide-react'
 import { computeCatAge } from '~/lib/catAge'
 import { useI18n } from '~/lib/i18n'
 import type { CatDTO } from '~/lib/types'
@@ -62,11 +62,18 @@ export function CatCard({
           </span>
         </div>
 
-        <p className="px-1.5 pb-1 text-sm font-semibold text-ink-soft">
+        <p className="px-1.5 text-sm font-semibold text-ink-soft">
           <span className="text-tangerine">{i18n.humanAgeLabel(age)}</span>{' '}
           {i18n.card.humanYears} &middot; {i18n.catAgeLabel(age)}
           {i18n.card.oldSuffix ? ` ${i18n.card.oldSuffix}` : ''}
         </p>
+
+        {cat.ownerName ? (
+          <p className="flex items-center gap-1 px-1.5 pb-1 pt-1 text-xs font-bold text-ink-soft/80">
+            <UserRound className="size-3.5" aria-hidden />
+            {i18n.detail.byOwner(cat.ownerName)}
+          </p>
+        ) : null}
       </article>
     </Link>
   )
