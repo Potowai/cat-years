@@ -79,6 +79,9 @@ export type Dict = {
     nextPhoto: string
     photoOf: (n: number, total: number) => string
     ownerBadge: string
+    copyLink: string
+    linkCopied: string
+    linkHint: string
     edit: string
     delete: string
     confirmDelete: string
@@ -158,6 +161,7 @@ export type Dict = {
     loading: string
     notOwnerTitle: string
     notOwnerText: (name: string) => string
+    notOwnerHint: string
     viewCat: (name: string) => string
     coats: Record<CoatId, string>
     aiChecking: string
@@ -293,6 +297,10 @@ const en: Dict = {
     nextPhoto: 'Next photo',
     photoOf: (n, total) => `Photo ${n} of ${total}`,
     ownerBadge: 'You added this cat 🐾',
+    copyLink: 'Copy editing link',
+    linkCopied: 'Editing link copied!',
+    linkHint:
+      'Keep this private link: it lets you edit this cat from any device, any browser.',
     edit: 'Edit',
     delete: 'Delete',
     confirmDelete: 'Yes, remove my cat',
@@ -386,6 +394,8 @@ const en: Dict = {
     notOwnerTitle: 'Not your cat to edit',
     notOwnerText: (name) =>
       `Only the person who added ${name} can change these details. If that is you, edit from the same browser you used to add them.`,
+    notOwnerHint:
+      'On another device? Open your private editing link (copy it from the device where you added the cat) and you will be recognised automatically.',
     viewCat: (name) => `View ${name}`,
     coats: {
       orange: 'Ginger',
@@ -596,6 +606,10 @@ const fr: Dict = {
     nextPhoto: 'Photo suivante',
     photoOf: (n, total) => `Photo ${n} sur ${total}`,
     ownerBadge: 'Vous avez ajouté ce chat 🐾',
+    copyLink: 'Copier le lien d’édition',
+    linkCopied: 'Lien d’édition copié !',
+    linkHint:
+      'Gardez ce lien privé : il permet de modifier ce chat depuis n’importe quel appareil ou navigateur.',
     edit: 'Modifier',
     delete: 'Supprimer',
     confirmDelete: 'Oui, retirer mon chat',
@@ -691,6 +705,8 @@ const fr: Dict = {
     notOwnerTitle: 'Ce chat n’est pas le vôtre',
     notOwnerText: (name) =>
       `Seule la personne qui a ajouté ${name} peut modifier ces informations. Si c’est vous, modifiez depuis le même navigateur que celui utilisé pour l’ajouter.`,
+    notOwnerHint:
+      'Sur un autre appareil ? Ouvrez votre lien d’édition privé (copiez-le depuis l’appareil où vous avez ajouté le chat) et vous serez reconnu automatiquement.',
     viewCat: (name) => `Voir ${name}`,
     coats: {
       orange: 'Roux',

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
-import { Pencil, Trash2 } from 'lucide-react'
+import { Link2, Pencil, Trash2 } from 'lucide-react'
 import { useI18n } from '~/lib/i18n'
 import { forgetOwnership } from '~/lib/tokens'
 import { useOwnership } from '~/lib/useOwnership'
@@ -19,8 +19,25 @@ export function OwnerActions({
   const navigate = useNavigate()
   const [confirming, setConfirming] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [copied, setCopied] = useState(false)
 
   if (!token) return null
+
+  function editLink(t: string) {
+    return `${window.location.origin}/cats/${slug}/edit?token=${t}`
+  }
+
+  async function copyEditLink() {
+    if (!token) return
+    const url = editLink(token)
+    try {
+      await navigator.clipboard.writeText(url)
+    } catch {
+      window.prompt(i18n.detail.copyLink, url)
+    }
+    setCopied(true)
+    window.setTimeout(() => setCopied(false), 2000)
+  }
 
   async function handleDelete() {
     if (!token) return
@@ -39,47 +56,60 @@ export function OwnerActions({
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-2 rounded-2xl border-2 border-dashed border-ink/40 bg-cream/40 p-3">
-      <span className="mr-1 text-sm font-bold text-ink-soft">
-        {i18n.detail.ownerBadge}
-      </span>
-      <Link
-        to="/cats/$catSlug/edit"
-        params={{ catSlug: slug }}
-        className={buttonClass({ variant: 'outline', size: 'sm' })}
-      >
-        <Pencil className="size-4" aria-hidden />
-        {i18n.detail.edit}
-      </Link>
-      {confirming ? (
-        <>
-          <button
-            type="button"
-            onClick={handleDelete}
-            disabled={busy}
-            className={buttonClass({ variant: 'danger', size: 'sm' })}
-          >
-            <Trash2 className="size-4" aria-hidden />
-            {busy ? i18n.detail.deleting : i18n.detail.confirmDelete}
-          </button>
-          <button
-            type="button"
-            onClick={() => setConfirming(false)}
-            className={buttonClass({ variant: 'ghost', size: 'sm' })}
-          >
-            {i18n.detail.cancel}
-          </button>
-        </>
-      ) : (
+    <div className="rounded-2xl border-2 border-dashed border-ink/40 bg-cream/40 p-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="mr-1 text-sm font-bold text-ink-soft">
+          {i18n.detail.ownerBadge}
+        </span>
+        <Link
+          to="/cats/$catSlug/edit"
+          params={{ catSlug: slug }}
+          className={buttonClass({ variant: 'outline', size: 'sm' })}
+        >
+          <Pencil className="size-4" aria-hidden />
+          {i18n.detail.edit}
+        </Link>
         <button
           type="button"
-          onClick={() => setConfirming(true)}
-          className={buttonClass({ variant: 'ghost', size: 'sm' })}
+          onClick={copyEditLink}
+          className={buttonClass({ variant: 'outline', size: 'sm' })}
         >
-          <Trash2 className="size-4" aria-hidden />
-          {i18n.detail.delete}
+          <Link2 className="size-4" aria-hidden />
+          {copied ? i18n.detail.linkCopied : i18n.detail.copyLink}
         </button>
-      )}
+        {confirming ? (
+          <>
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={busy}
+              className={buttonClass({ variant: 'danger', size: 'sm' })}
+            >
+              <Trash2 className="size-4" aria-hidden />
+              {busy ? i18n.detail.deleting : i18n.detail.confirmDelete}
+            </button>
+            <button
+              type="button"
+              onClick={() => setConfirming(false)}
+              className={buttonClass({ variant: 'ghost', size: 'sm' })}
+            >
+              {i18n.detail.cancel}
+            </button>
+          </>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setConfirming(true)}
+            className={buttonClass({ variant: 'ghost', size: 'sm' })}
+          >
+            <Trash2 className="size-4" aria-hidden />
+            {i18n.detail.delete}
+          </button>
+        )}
+      </div>
+      <p className="mt-2 text-xs font-medium text-ink-soft">
+        {i18n.detail.linkHint}
+      </p>
     </div>
   )
 }

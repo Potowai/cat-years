@@ -17,7 +17,10 @@ Built with **TanStack Start** (TanStack Router + React Query) and deployed to
   scientific" stats (naps, heartbeats, days on Earth), a verdict, a purr button
   and one-tap sharing.
 - **No accounts** — you get a secret key stored in your browser, so you can
-  edit or delete your own cats without signing up.
+  edit or delete your own cats without signing up. On another device, open your
+  **private editing link** (`/cats/<slug>/edit?token=…`, copy it from the owner
+  bar) and you are recognised automatically: the link is the key, so treat it
+  like a password.
 - **Personalised social previews** per cat for sharing.
 - **English & French, automatically** — the app picks a language from the
   visitor's region (Vercel geo headers), then their browser's `Accept-Language`,

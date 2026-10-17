@@ -161,7 +161,7 @@ export async function updateCat(input: {
   coat?: string
 }): Promise<CatDTO> {
   const db = await getDb()
-  await assertOwner(input.slug, input.token)
+  const previous = await assertOwner(input.slug, input.token)
   const photos = input.photos.slice(0, MAX_PHOTOS)
   const rows = await db
     .update(cats)
@@ -175,7 +175,30 @@ export async function updateCat(input: {
     })
     .where(eq(cats.slug, input.slug))
     .returning()
+
+  // Photos the owner removed should not linger in storage.
+  const kept = new Set(photos)
+  await removeBlobPhotos(
+    (previous.photos ?? []).filter((url) => url && !kept.has(url)),
+  )
+
   return toDTO(rows[0])
+}
+
+/**
+ * Best-effort removal of a cat's photos from Vercel Blob. Local `/uploads/...`
+ * paths are left alone, and failures never block the delete.
+ */
+async function removeBlobPhotos(urls: string[]): Promise<void> {
+  if (!process.env.BLOB_READ_WRITE_TOKEN) return
+  const targets = urls.filter((u) => /^https:\/\//.test(u))
+  if (targets.length === 0) return
+  try {
+    const { del } = await import('@vercel/blob')
+    await del(targets)
+  } catch {
+    /* storage cleanup is best-effort */
+  }
 }
 
 export async function deleteCat(input: {
@@ -183,8 +206,11 @@ export async function deleteCat(input: {
   token: string
 }): Promise<void> {
   const db = await getDb()
-  await assertOwner(input.slug, input.token)
+  const row = await assertOwner(input.slug, input.token)
   await db.delete(cats).where(eq(cats.slug, input.slug))
+  const photos =
+    row.photos && row.photos.length > 0 ? row.photos : [row.photoUrl]
+  await removeBlobPhotos(photos.filter(Boolean))
 }
 
 export async function purrCat(slug: string): Promise<number> {
