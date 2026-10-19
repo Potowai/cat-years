@@ -21,7 +21,7 @@ import {
 import { cn } from '~/lib/utils'
 import { uploadPhoto } from '~/lib/upload'
 import { createCatFn, updateCatFn } from '~/server/cats.functions'
-import { Button, Chip, Input, Label, Textarea } from './ui'
+import { Button, buttonClass, Chip, Input, Label, Textarea } from './ui'
 
 type CatFormProps = {
   mode: 'create' | 'edit'
@@ -62,6 +62,7 @@ export function CatForm({ mode, initial, token }: CatFormProps) {
   const [submitting, setSubmitting] = useState(false)
   const [aiStatus, setAiStatus] = useState<AiStatus>('idle')
   const [aiReview, setAiReview] = useState<Prediction[] | null>(null)
+  const [aiOverridden, setAiOverridden] = useState(false)
 
   const age = birthdate ? computeCatAge(birthdate) : null
   const today = new Date().toISOString().slice(0, 10)
@@ -71,6 +72,7 @@ export function CatForm({ mode, initial, token }: CatFormProps) {
     const id = ++checkId.current
     setAiStatus('checking')
     setAiReview(null)
+    setAiOverridden(false)
     void (async () => {
       for (const item of items) {
         if (!item.file) continue
@@ -78,11 +80,9 @@ export function CatForm({ mode, initial, token }: CatFormProps) {
         if (id !== checkId.current) return
         setAiReview(result.predictions ?? null)
         if (result.status === 'not-cat') {
-          // Drop the offending photo and tell the user why.
-          URL.revokeObjectURL(item.url)
-          setPhotos((prev) => prev.filter((p) => p.id !== item.id))
+          // Advisory only. MobileNet knows just five domestic-cat labels, so a
+          // real cat of an unsupported breed lands here; the owner decides.
           setAiStatus('not-cat')
-          setError(i18n.form.aiNotCat)
           return
         }
       }
@@ -126,6 +126,7 @@ export function CatForm({ mode, initial, token }: CatFormProps) {
     checkId.current += 1
     setAiStatus('idle')
     setAiReview(null)
+    setAiOverridden(false)
     setError(null)
   }
 
@@ -147,14 +148,6 @@ export function CatForm({ mode, initial, token }: CatFormProps) {
     }
     if (birthdate > today) {
       setError(i18n.form.errFuture)
-      return
-    }
-    if (aiStatus === 'checking') {
-      setError(i18n.form.aiChecking)
-      return
-    }
-    if (aiStatus === 'not-cat') {
-      setError(i18n.form.aiNotCat)
       return
     }
 
@@ -296,26 +289,39 @@ export function CatForm({ mode, initial, token }: CatFormProps) {
             />
           </div>
 
-          {aiStatus === 'checking' ||
-          aiStatus === 'ok' ||
-          aiStatus === 'not-cat' ? (
+          {aiStatus === 'checking' || aiStatus === 'ok' ? (
             <p
               role="status"
               className={cn(
                 'mt-2 text-sm font-bold',
-                aiStatus === 'ok'
-                  ? 'text-sage'
-                  : aiStatus === 'not-cat'
-                    ? 'text-tangerine'
-                    : 'text-ink-soft',
+                aiStatus === 'ok' ? 'text-sage' : 'text-ink-soft',
               )}
             >
-              {aiStatus === 'checking'
-                ? i18n.form.aiChecking
-                : aiStatus === 'ok'
-                  ? i18n.form.aiCatOk
-                  : i18n.form.aiNotCat}
+              {aiStatus === 'checking' ? i18n.form.aiChecking : i18n.form.aiCatOk}
             </p>
+          ) : null}
+
+          {aiStatus === 'not-cat' ? (
+            <div className="mt-2 rounded-2xl border-2 border-dashed border-tangerine bg-tangerine/10 px-3 py-3">
+              <p role="status" className="text-sm font-bold text-tangerine">
+                {aiOverridden
+                  ? i18n.form.aiOverridden
+                  : i18n.form.aiNotCatSoft}
+              </p>
+              {!aiOverridden ? (
+                <button
+                  type="button"
+                  onClick={() => setAiOverridden(true)}
+                  className={buttonClass({
+                    variant: 'outline',
+                    size: 'sm',
+                    className: 'mt-2',
+                  })}
+                >
+                  {i18n.form.aiAddAnyway}
+                </button>
+              ) : null}
+            </div>
           ) : null}
           {import.meta.env.DEV && aiReview ? (
             <details className="mt-2 rounded-xl border-2 border-dashed border-ink/40 bg-paper px-3 py-2 text-xs">
@@ -494,7 +500,7 @@ export function CatForm({ mode, initial, token }: CatFormProps) {
         <Button
           type="submit"
           size="lg"
-          disabled={submitting || aiStatus === 'checking'}
+          disabled={submitting}
           className="mt-4 w-full"
         >
           {submitting ? (

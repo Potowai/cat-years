@@ -73,6 +73,7 @@ export type Dict = {
     copied: string
     purrAria: string
     purrWord: string
+    purrDone: string
     prevPhoto: string
     nextPhoto: string
     photoOf: (n: number, total: number) => string
@@ -145,6 +146,10 @@ export type Dict = {
     linkHint: string
     claimed: (n: number) => string
     loading: string
+    confirmTitle: string
+    confirmText: string
+    confirmUse: string
+    confirmKeep: string
   }
   form: {
     newTitle: string
@@ -187,6 +192,9 @@ export type Dict = {
     aiChecking: string
     aiCatOk: string
     aiNotCat: string
+    aiNotCatSoft: string
+    aiAddAnyway: string
+    aiOverridden: string
     errPhotoMissing: string
     errTooManyPhotos: string
     errNameMissing: string
@@ -317,6 +325,7 @@ const en: Dict = {
     copied: 'Link copied!',
     purrAria: 'Give this cat a purr',
     purrWord: 'purrs',
+    purrDone: 'You already purred this cat',
     prevPhoto: 'Previous photo',
     nextPhoto: 'Next photo',
     photoOf: (n, total) => `Photo ${n} of ${total}`,
@@ -405,6 +414,11 @@ const en: Dict = {
       'This one link unlocks all of your cats on any device. Treat it like a password and keep it somewhere safe.',
     claimed: (n) => (n === 1 ? '1 older cat linked' : `${n} older cats linked`),
     loading: 'Loading…',
+    confirmTitle: 'Replace the cats on this device?',
+    confirmText:
+      'This link belongs to another owner key. Opening it replaces the cats saved on this device with that owner’s cats.',
+    confirmUse: 'Yes, use this link',
+    confirmKeep: 'Keep my cats',
   },
   form: {
     newTitle: 'Put your cat on the wall',
@@ -465,6 +479,10 @@ const en: Dict = {
     aiCatOk: 'Cat detected 🐾',
     aiNotCat:
       "Hmm, that doesn't look like a cat. We only do cats here. 🐾",
+    aiNotCatSoft:
+      'We are not sure this is a cat — our detector only knows a few breeds. If it is a cat, add it anyway.',
+    aiAddAnyway: 'Add it anyway — it is a cat',
+    aiOverridden: 'Fine, we believe you. 🐾',
   },
   stages: {
     kitten: {
@@ -530,6 +548,8 @@ const en: Dict = {
       'Whoa there, that is a lot of cats. Take a breather and try again in a few minutes.',
     [ERR.TOO_MANY_CATS]:
       'The wall is full for now — too many cats have moved in. Please try again later.',
+    [ERR.PHOTO_NOT_YOURS]:
+      'That photo did not come from this app. Please upload your photo again.',
     [ERR.GENERIC]: 'Something went wrong.',
   },
   notFound: {
@@ -655,6 +675,7 @@ const fr: Dict = {
     copied: 'Lien copié !',
     purrAria: 'Offrir un ronron à ce chat',
     purrWord: 'ronrons',
+    purrDone: 'Vous avez déjà ronronné pour ce chat',
     prevPhoto: 'Photo précédente',
     nextPhoto: 'Photo suivante',
     photoOf: (n, total) => `Photo ${n} sur ${total}`,
@@ -745,6 +766,11 @@ const fr: Dict = {
     claimed: (n) =>
       n === 1 ? '1 ancien chat rattaché' : `${n} anciens chats rattachés`,
     loading: 'Chargement…',
+    confirmTitle: 'Remplacer les chats de cet appareil ?',
+    confirmText:
+      'Ce lien appartient à une autre clé propriétaire. L’ouvrir remplace les chats enregistrés sur cet appareil par ceux de ce propriétaire.',
+    confirmUse: 'Oui, utiliser ce lien',
+    confirmKeep: 'Garder mes chats',
   },
   form: {
     newTitle: 'Affichez votre chat sur le mur',
@@ -807,6 +833,10 @@ const fr: Dict = {
     aiCatOk: 'Chat détecté 🐾',
     aiNotCat:
       'Hmm, ça ne ressemble pas à un chat. Ici, on ne fait que des chats. 🐾',
+    aiNotCatSoft:
+      'Nous ne sommes pas sûrs qu’il s’agisse d’un chat — notre détecteur ne connaît que quelques races. Si c’en est un, ajoutez-le quand même.',
+    aiAddAnyway: 'Ajouter quand même — c’est un chat',
+    aiOverridden: 'D’accord, on vous croit. 🐾',
   },
   stages: {
     kitten: {
@@ -880,6 +910,8 @@ const fr: Dict = {
       'Doucement, voilà beaucoup de chats. Soufflez un peu et réessayez dans quelques minutes.',
     [ERR.TOO_MANY_CATS]:
       'Le mur est plein pour l’instant — trop de chats ont emménagé. Réessayez plus tard.',
+    [ERR.PHOTO_NOT_YOURS]:
+      'Cette photo ne vient pas de cette application. Veuillez envoyer votre photo à nouveau.',
     [ERR.GENERIC]: 'Une erreur est survenue.',
   },
   notFound: {
