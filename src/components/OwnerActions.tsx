@@ -43,7 +43,7 @@ export function OwnerActions({
     if (!token) return
     setBusy(true)
     try {
-      await deleteCatFn({ data: { id: slug, token } })
+      await deleteCatFn({ data: { slug, token } })
       forgetOwnership(catId)
       await navigate({ to: '/' })
     } catch (err) {

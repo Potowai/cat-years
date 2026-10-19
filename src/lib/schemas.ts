@@ -68,7 +68,11 @@ export const claimCatSchema = z.object({
   ownerName: z.string().trim().max(40).optional(),
 })
 
-export const catTokenSchema = z.object({
-  id: z.string().min(1),
+/**
+ * Deleting is keyed by slug (the public identifier used in URLs), not the uuid.
+ * The token still authorises it.
+ */
+export const catDeleteSchema = z.object({
+  slug: z.string().min(1),
   token: z.string().min(10),
 })

@@ -14,6 +14,19 @@ export async function hashToken(token: string): Promise<string> {
   ).join('')
 }
 
+/**
+ * Length-independent, constant-time string comparison. Used to compare secret
+ * hashes so a caller cannot learn a token byte-by-byte from response timing.
+ */
+export function constantTimeEqual(a: string, b: string): boolean {
+  let diff = a.length ^ b.length
+  const max = Math.max(a.length, b.length)
+  for (let i = 0; i < max; i += 1) {
+    diff |= (a.charCodeAt(i) || 0) ^ (b.charCodeAt(i) || 0)
+  }
+  return diff === 0
+}
+
 function readOwned(): Record<string, string> {
   if (typeof localStorage === 'undefined') return {}
   try {
@@ -66,6 +79,12 @@ export function getOwnerToken(): string {
     localStorage.setItem(OWNER_KEY, token)
   }
   return token
+}
+
+/** The stored owner token, or null. Unlike `getOwnerToken`, never creates one. */
+export function peekOwnerToken(): string | null {
+  if (typeof localStorage === 'undefined') return null
+  return localStorage.getItem(OWNER_KEY)
 }
 
 export function setOwnerToken(token: string): void {

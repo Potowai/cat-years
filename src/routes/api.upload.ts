@@ -2,9 +2,16 @@ import { randomUUID } from 'node:crypto'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { createFileRoute } from '@tanstack/react-router'
+import {
+  recordPhotoUpload,
+  uploadQuotaExceeded,
+} from '~/db/cats.server'
 import { ERR } from '~/lib/errors'
+import { ipHashFromHeaders } from '~/server/request'
 
 const MAX_BYTES = 4 * 1024 * 1024
+/** Multipart framing on top of the file itself. */
+const MAX_BODY_BYTES = MAX_BYTES + 512 * 1024
 const ALLOWED: Record<string, string> = {
   'image/jpeg': 'jpg',
   'image/png': 'png',
@@ -60,6 +67,19 @@ export const Route = createFileRoute('/api/upload')({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        const ipHash = await ipHashFromHeaders(request.headers)
+
+        // Reject over-large bodies before buffering them into memory.
+        const declared = Number(request.headers.get('content-length') ?? '')
+        if (Number.isFinite(declared) && declared > MAX_BODY_BYTES) {
+          return bad(ERR.TOO_BIG, 413)
+        }
+
+        // Uploads are anonymous, so cap them per caller like cat creation.
+        if (await uploadQuotaExceeded(ipHash)) {
+          return bad(ERR.RATE_LIMITED, 429)
+        }
+
         let form: FormData
         try {
           form = await request.formData()
@@ -95,6 +115,7 @@ export const Route = createFileRoute('/api/upload')({
               addRandomSuffix: false,
             },
           )
+          await recordPhotoUpload(blob.url, ipHash)
           return Response.json({ url: blob.url })
         }
 
@@ -103,7 +124,9 @@ export const Route = createFileRoute('/api/upload')({
           const dir = join(process.cwd(), 'public', 'uploads')
           await mkdir(dir, { recursive: true })
           await writeFile(join(dir, filename), bytes)
-          return Response.json({ url: `/uploads/${filename}` })
+          const url = `/uploads/${filename}`
+          await recordPhotoUpload(url, ipHash)
+          return Response.json({ url })
         } catch {
           return bad(ERR.STORAGE_UNCONFIGURED, 500)
         }

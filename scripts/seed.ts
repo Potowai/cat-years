@@ -1,4 +1,5 @@
 import { PGlite } from '@electric-sql/pglite'
+import { DDL } from '../src/db/client.server'
 import { hashToken } from '../src/lib/tokens'
 import { slugify } from '../src/lib/utils'
 
@@ -11,35 +12,12 @@ const demo = [
   { name: 'Sir Pounce', birthdate: '2023-01-05', photoUrl: 'https://images.unsplash.com/photo-1596854407944-bf87f6fdd49e?w=1200&q=80&auto=format&fit=crop', bio: 'Currently training for the 3am Olympic sprint finals.', coat: 'calico', purrs: 17 },
 ]
 
-const ddl = `
-CREATE TABLE IF NOT EXISTS cats (
-  id uuid PRIMARY KEY,
-  name text NOT NULL,
-  slug text NOT NULL,
-  birthdate date NOT NULL,
-  photo_url text NOT NULL,
-  photos text[] NOT NULL DEFAULT '{}',
-  bio text,
-  coat text,
-  purrs integer NOT NULL DEFAULT 0,
-  edit_token_hash text NOT NULL,
-  owner_token_hash text,
-  owner_name text,
-  ip_hash text,
-  created_at timestamptz NOT NULL DEFAULT now()
-);
-CREATE UNIQUE INDEX IF NOT EXISTS cats_slug_idx ON cats (slug);
-CREATE INDEX IF NOT EXISTS cats_created_at_idx ON cats (created_at);
-ALTER TABLE cats ADD COLUMN IF NOT EXISTS photos text[] NOT NULL DEFAULT '{}';
-ALTER TABLE cats ADD COLUMN IF NOT EXISTS owner_token_hash text;
-ALTER TABLE cats ADD COLUMN IF NOT EXISTS owner_name text;
-`
-
 async function main() {
   const dir = process.env.PGLITE_DIR || './.pglite'
   const client = new PGlite(dir)
   await client.waitReady
-  await client.exec(ddl)
+  // Same DDL the dev database applies, so the seed can never drift from it.
+  await client.exec(DDL)
 
   let added = 0
   for (const cat of demo) {

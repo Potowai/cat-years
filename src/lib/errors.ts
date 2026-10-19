@@ -15,6 +15,8 @@ export const ERR = {
   CAT_GONE: 'err.cat_gone',
   RATE_LIMITED: 'err.rate_limited',
   TOO_MANY_CATS: 'err.too_many_cats',
+  /** A photo URL that this app did not issue for this cat. */
+  PHOTO_NOT_YOURS: 'err.photo_not_yours',
   GENERIC: 'err.generic',
 } as const
 

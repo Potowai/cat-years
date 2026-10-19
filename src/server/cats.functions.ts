@@ -1,17 +1,16 @@
 import { createServerFn } from '@tanstack/react-start'
-import { getRequestHeader } from '@tanstack/react-start/server'
 import { z } from 'zod'
 import * as repo from '~/db/cats.server'
-import { ERR } from '~/lib/errors'
-import { hashToken } from '~/lib/tokens'
 import {
   catCreateSchema,
-  catTokenSchema,
+  catDeleteSchema,
   catUpdateSchema,
   claimCatSchema,
   ownerListSchema,
   ownerNameSchema,
 } from '~/lib/schemas'
+import { hashToken } from '~/lib/tokens'
+import { ipHashFromRequest } from '~/server/request'
 
 const sortSchema = z.object({
   sort: z
@@ -19,50 +18,14 @@ const sortSchema = z.object({
     .default('newest'),
 })
 
-/**
- * Anti-abuse caps so nobody can carpet the wall with cats. All are overridable
- * with environment variables (see README).
- */
-const LIMITS = {
-  total: Number(process.env.MAX_TOTAL_CATS ?? 20_000),
-  per10min: Number(process.env.MAX_CATS_PER_10MIN ?? 6),
-  perHour: Number(process.env.MAX_CATS_PER_HOUR ?? 15),
-  perDay: Number(process.env.MAX_CATS_PER_DAY ?? 30),
-}
-
-async function enforceCreateLimits(ipHash: string | null): Promise<void> {
-  const total = await repo.countAllCats()
-  if (total >= LIMITS.total) {
-    throw new Error(ERR.TOO_MANY_CATS)
-  }
-  if (!ipHash) return
-  const [recent, lastHour, lastDay] = await Promise.all([
-    repo.countRecentByIp(ipHash, 10),
-    repo.countRecentByIp(ipHash, 60),
-    repo.countRecentByIp(ipHash, 60 * 24),
-  ])
-  if (
-    recent >= LIMITS.per10min ||
-    lastHour >= LIMITS.perHour ||
-    lastDay >= LIMITS.perDay
-  ) {
-    throw new Error(ERR.RATE_LIMITED)
-  }
-}
-
-async function ipHashFromRequest(): Promise<string | null> {
-  const forwarded = getRequestHeader('x-forwarded-for')
-  const ip =
-    forwarded?.split(',')[0]?.trim() ||
-    getRequestHeader('x-real-ip') ||
-    'unknown'
-  const salt = process.env.IP_SALT ?? 'cat-years'
-  return hashToken(`${salt}:${ip}`)
-}
-
 export const listCatsFn = createServerFn({ method: 'GET' })
   .validator(sortSchema)
   .handler(async ({ data }) => repo.listCats(data.sort))
+
+/** Wall totals, computed over every cat rather than the displayed page. */
+export const getWallStatsFn = createServerFn({ method: 'GET' }).handler(
+  async () => repo.getWallStats(),
+)
 
 export const getCatFn = createServerFn({ method: 'GET' })
   .validator(z.object({ slug: z.string().min(1) }))
@@ -72,18 +35,22 @@ export const createCatFn = createServerFn({ method: 'POST' })
   .validator(catCreateSchema)
   .handler(async ({ data }) => {
     const ipHash = await ipHashFromRequest()
-    await enforceCreateLimits(ipHash)
     const { ownerToken, ownerName, ...cat } = data
-    return repo.insertCat({
+    return repo.createCat({
       ...cat,
-      ipHash: ipHash ?? undefined,
+      ipHash,
       ownerTokenHash: ownerToken ? await hashToken(ownerToken) : undefined,
       ownerName,
     })
   })
 
-/** Every cat belonging to one owner token (used by the "my cats" page). */
-export const listMyCatsFn = createServerFn({ method: 'GET' })
+/**
+ * Every cat belonging to one owner token (used by the "my cats" page).
+ *
+ * POST, not GET: TanStack Start puts a GET server function's payload in the
+ * query string, which would spill this bearer token into access logs.
+ */
+export const listMyCatsFn = createServerFn({ method: 'POST' })
   .validator(ownerListSchema)
   .handler(async ({ data }) => repo.listCatsByOwner(data.ownerToken))
 
@@ -104,15 +71,15 @@ export const updateCatFn = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => repo.updateCat(data))
 
 export const deleteCatFn = createServerFn({ method: 'POST' })
-  .validator(catTokenSchema)
+  .validator(catDeleteSchema)
   .handler(async ({ data }) => {
-    await repo.deleteCat({ slug: data.id, token: data.token })
+    await repo.deleteCat({ slug: data.slug, token: data.token })
     return { ok: true }
   })
 
 export const purrCatFn = createServerFn({ method: 'POST' })
   .validator(z.object({ slug: z.string().min(1) }))
   .handler(async ({ data }) => {
-    const purrs = await repo.purrCat(data.slug)
-    return { purrs }
+    const ipHash = await ipHashFromRequest()
+    return repo.purrCat(data.slug, ipHash)
   })

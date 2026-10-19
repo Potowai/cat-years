@@ -1,10 +1,25 @@
-import { and, asc, desc, eq, gt, like, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, gt, inArray, isNull, like, sql } from 'drizzle-orm'
+import { computeCatAge } from '~/lib/catAge'
 import { ERR } from '~/lib/errors'
-import { hashToken } from '~/lib/tokens'
+import { constantTimeEqual, createToken, hashToken } from '~/lib/tokens'
 import { MAX_PHOTOS, type CatDTO, type CatSort } from '~/lib/types'
 import { slugify } from '~/lib/utils'
 import { getDb } from './client.server'
-import { cats, type CatRow } from './schema'
+import { cats, photoUploads, purrs, type CatRow } from './schema'
+
+/**
+ * Anti-abuse caps so nobody can carpet the wall with cats. All are overridable
+ * with environment variables (see README).
+ */
+const LIMITS = {
+  total: Number(process.env.MAX_TOTAL_CATS ?? 20_000),
+  per10min: Number(process.env.MAX_CATS_PER_10MIN ?? 6),
+  perHour: Number(process.env.MAX_CATS_PER_HOUR ?? 15),
+  perDay: Number(process.env.MAX_CATS_PER_DAY ?? 30),
+  uploadsPer10min: Number(process.env.MAX_UPLOADS_PER_10MIN ?? 20),
+  uploadsPerDay: Number(process.env.MAX_UPLOADS_PER_DAY ?? 120),
+  purrsPer10min: Number(process.env.MAX_PURRS_PER_10MIN ?? 40),
+}
 
 function toDTO(row: CatRow): CatDTO {
   const photos =
@@ -22,6 +37,12 @@ function toDTO(row: CatRow): CatDTO {
     purrs: row.purrs,
     createdAt: row.createdAt.toISOString(),
   }
+}
+
+/** All photos of a row, tolerating older rows that only have `photo_url`. */
+function photosOf(row: CatRow): string[] {
+  const photos = row.photos && row.photos.length > 0 ? row.photos : [row.photoUrl]
+  return photos.filter(Boolean)
 }
 
 /** Postgres unique-constraint violation (23505). */
@@ -63,40 +84,114 @@ export async function getCatBySlug(slug: string): Promise<CatDTO | null> {
   return rows[0] ? toDTO(rows[0]) : null
 }
 
-async function uniqueSlug(name: string): Promise<string> {
-  const db = await getDb()
-  const base = slugify(name)
-  const existing = await db
-    .select({ slug: cats.slug })
-    .from(cats)
-    .where(like(cats.slug, `${base}%`))
-  const taken = new Set(existing.map((r) => r.slug))
-  if (!taken.has(base)) return base
-  let n = 2
-  while (taken.has(`${base}-${n}`)) n += 1
-  return `${base}-${n}`
-}
-
-export async function countRecentByIp(
-  ipHash: string,
-  windowMinutes = 10,
-): Promise<number> {
-  const db = await getDb()
-  const since = new Date(Date.now() - windowMinutes * 60_000)
-  const rows = await db
-    .select({ count: sql<number>`count(*)::int` })
-    .from(cats)
-    .where(and(eq(cats.ipHash, ipHash), gt(cats.createdAt, since)))
-  return rows[0]?.count ?? 0
-}
-
 export async function countAllCats(): Promise<number> {
   const db = await getDb()
   const rows = await db.select({ count: sql<number>`count(*)::int` }).from(cats)
   return rows[0]?.count ?? 0
 }
 
-export async function insertCat(input: {
+/**
+ * Headline numbers for the wall.
+ *
+ * Computed from every row rather than the page of 500 that `listCats` returns,
+ * so the totals stay honest once the wall grows past the display cap. The age
+ * maths is left to `computeCatAge` so it cannot drift from the JS formula.
+ */
+export type WallStats = {
+  cats: number
+  purrs: number
+  avgHumanYears: number
+  oldestHumanYears: number
+}
+
+export async function getWallStats(): Promise<WallStats> {
+  const db = await getDb()
+  const rows = await db
+    .select({ birthdate: cats.birthdate, purrs: cats.purrs })
+    .from(cats)
+
+  let purrsTotal = 0
+  let humanSum = 0
+  let oldest = 0
+  for (const row of rows) {
+    purrsTotal += row.purrs
+    const { humanYears } = computeCatAge(row.birthdate)
+    humanSum += humanYears
+    if (humanYears > oldest) oldest = humanYears
+  }
+
+  return {
+    cats: rows.length,
+    purrs: purrsTotal,
+    avgHumanYears: rows.length > 0 ? humanSum / rows.length : 0,
+    oldestHumanYears: oldest,
+  }
+}
+
+// --- Photo ownership -----------------------------------------------------
+// `photo_uploads` records every URL this app has issued. A URL may be attached
+// to exactly one cat, and storage cleanup only ever touches URLs owned by the
+// cat being edited — so a client can never aim a delete at someone else's blob.
+
+/** Called by the upload endpoint once the bytes are safely stored. */
+export async function recordPhotoUpload(
+  url: string,
+  ipHash?: string | null,
+): Promise<void> {
+  const db = await getDb()
+  await db
+    .insert(photoUploads)
+    .values({ url, ipHash: ipHash ?? null })
+    .onConflictDoNothing()
+}
+
+export async function countRecentUploadsByIp(
+  ipHash: string,
+  windowMinutes: number,
+): Promise<number> {
+  const db = await getDb()
+  const since = new Date(Date.now() - windowMinutes * 60_000)
+  const rows = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(photoUploads)
+    .where(
+      and(eq(photoUploads.ipHash, ipHash), gt(photoUploads.createdAt, since)),
+    )
+  return rows[0]?.count ?? 0
+}
+
+/** True when this caller has used up its anonymous upload allowance. */
+export async function uploadQuotaExceeded(ipHash: string): Promise<boolean> {
+  const [recent, today] = await Promise.all([
+    countRecentUploadsByIp(ipHash, 10),
+    countRecentUploadsByIp(ipHash, 60 * 24),
+  ])
+  return recent >= LIMITS.uploadsPer10min || today >= LIMITS.uploadsPerDay
+}
+
+async function photosOwnedBy(catId: string): Promise<string[]> {
+  const db = await getDb()
+  const rows = await db
+    .select({ url: photoUploads.url })
+    .from(photoUploads)
+    .where(eq(photoUploads.catId, catId))
+  return rows.map((row) => row.url)
+}
+
+/** The invariant shared by create and update: only an unclaimed upload may be attached. */
+function isUnclaimed(url: string) {
+  return and(eq(photoUploads.url, url), isNull(photoUploads.catId))
+}
+
+/** Derives a free slug from an already-slugified base. */
+function pickSlug(base: string, taken: Set<string>): string {
+  if (!taken.has(base)) return base
+  let n = 2
+  while (taken.has(`${base}-${n}`)) n += 1
+  return `${base}-${n}`
+}
+
+export async function createCat(input: {
   name: string
   birthdate: string
   photos: string[]
@@ -108,40 +203,101 @@ export async function insertCat(input: {
 }): Promise<{ cat: CatDTO; token: string }> {
   const db = await getDb()
   const id = crypto.randomUUID()
-  const token = crypto.randomUUID().replace(/-/g, '') + id.replace(/-/g, '')
+  const token = createToken()
   const tokenHash = await hashToken(token)
   const photos = input.photos.slice(0, MAX_PHOTOS)
+  // The request schema already requires one photo; guard the direct callers too.
+  if (photos.length === 0) throw new Error(ERR.NO_PHOTO)
+  const lockKey = input.ipHash ?? 'anonymous'
 
-  // Names may repeat: `uniqueSlug` derives a free slug, and we retry on the
-  // rare race where two inserts pick the same slug at the same moment.
-  let lastError: unknown
+  // Names may repeat, so two concurrent inserts can race for the same slug.
+  // A failed statement aborts its whole transaction in Postgres, so the retry
+  // wraps the transaction instead of living inside it.
   for (let attempt = 0; attempt < 6; attempt += 1) {
-    const slug = await uniqueSlug(input.name)
     try {
-      const rows = await db
-        .insert(cats)
-        .values({
-          id,
-          name: input.name,
-          slug,
-          birthdate: input.birthdate,
-          photoUrl: photos[0],
-          photos,
-          bio: input.bio?.trim() ? input.bio.trim() : null,
-          coat: input.coat ?? null,
-          editTokenHash: tokenHash,
-          ownerTokenHash: input.ownerTokenHash ?? null,
-          ownerName: input.ownerName?.trim() ? input.ownerName.trim() : null,
-          ipHash: input.ipHash ?? null,
-        })
-        .returning()
-      return { cat: toDTO(rows[0]), token }
+      return await db.transaction(async (tx) => {
+        // Serialise the limit check and the insert so parallel requests cannot
+        // all pass the window checks before any of them lands.
+        await tx.execute(
+          sql`select pg_advisory_xact_lock(hashtext(${lockKey})::bigint)`,
+        )
+
+        const total = await tx
+          .select({ count: sql<number>`count(*)::int` })
+          .from(cats)
+        if ((total[0]?.count ?? 0) >= LIMITS.total) {
+          throw new Error(ERR.TOO_MANY_CATS)
+        }
+
+        if (input.ipHash) {
+          const since = (minutes: number) =>
+            new Date(Date.now() - minutes * 60_000)
+          const countSince = async (minutes: number) => {
+            const rows = await tx
+              .select({ count: sql<number>`count(*)::int` })
+              .from(cats)
+              .where(
+                and(
+                  eq(cats.ipHash, input.ipHash as string),
+                  gt(cats.createdAt, since(minutes)),
+                ),
+              )
+            return rows[0]?.count ?? 0
+          }
+          const recent = await countSince(10)
+          const lastHour = await countSince(60)
+          const lastDay = await countSince(60 * 24)
+          if (
+            recent >= LIMITS.per10min ||
+            lastHour >= LIMITS.perHour ||
+            lastDay >= LIMITS.perDay
+          ) {
+            throw new Error(ERR.RATE_LIMITED)
+          }
+        }
+
+        const base = slugify(input.name)
+        const takenRows = await tx
+          .select({ slug: cats.slug })
+          .from(cats)
+          .where(like(cats.slug, `${base}%`))
+        const slug = pickSlug(base, new Set(takenRows.map((r) => r.slug)))
+
+        const rows = await tx
+          .insert(cats)
+          .values({
+            id,
+            name: input.name,
+            slug,
+            birthdate: input.birthdate,
+            photoUrl: photos[0],
+            photos,
+            bio: input.bio?.trim() ? input.bio.trim() : null,
+            coat: input.coat ?? null,
+            editTokenHash: tokenHash,
+            ownerTokenHash: input.ownerTokenHash ?? null,
+            ownerName: input.ownerName?.trim() ? input.ownerName.trim() : null,
+            ipHash: input.ipHash ?? null,
+          })
+          .returning()
+
+        // Only URLs this app issued, and only if nobody else has claimed them.
+        for (const url of photos) {
+          const claimed = await tx
+            .update(photoUploads)
+            .set({ catId: id })
+            .where(isUnclaimed(url))
+            .returning({ url: photoUploads.url })
+          if (claimed.length === 0) throw new Error(ERR.PHOTO_NOT_YOURS)
+        }
+
+        return { cat: toDTO(rows[0]), token }
+      })
     } catch (error) {
       if (!isUniqueViolation(error)) throw error
-      lastError = error
     }
   }
-  throw lastError instanceof Error ? lastError : new Error(ERR.GENERIC)
+  throw new Error(ERR.GENERIC)
 }
 
 async function assertOwner(slug: string, token: string): Promise<CatRow> {
@@ -151,7 +307,11 @@ async function assertOwner(slug: string, token: string): Promise<CatRow> {
   if (!row) throw new Error(ERR.CAT_GONE)
   const hash = await hashToken(token)
   // Either the per-cat token or the owner-wide token grants access.
-  if (hash !== row.editTokenHash && hash !== row.ownerTokenHash) {
+  const matches =
+    constantTimeEqual(hash, row.editTokenHash) ||
+    (row.ownerTokenHash !== null &&
+      constantTimeEqual(hash, row.ownerTokenHash))
+  if (!matches) {
     throw new Error(ERR.NOT_OWNER)
   }
   return row
@@ -191,7 +351,9 @@ export async function claimCat(input: {
   const row = found[0]
   if (!row) return null
   const hash = await hashToken(input.token)
-  if (hash !== row.editTokenHash) throw new Error(ERR.NOT_OWNER)
+  if (!constantTimeEqual(hash, row.editTokenHash)) {
+    throw new Error(ERR.NOT_OWNER)
+  }
   const ownerHash = await hashToken(input.ownerToken)
   if (row.ownerTokenHash === ownerHash) return toDTO(row)
   const rows = await db
@@ -234,6 +396,21 @@ export async function updateCat(input: {
   const db = await getDb()
   const previous = await assertOwner(input.slug, input.token)
   const photos = input.photos.slice(0, MAX_PHOTOS)
+  const previousPhotos = photosOf(previous)
+  const owned = new Set(await photosOwnedBy(previous.id))
+
+  // Photos already on this cat stay usable (legacy rows predate the upload
+  // ledger); anything new must be an unclaimed upload of ours.
+  for (const url of photos) {
+    if (previousPhotos.includes(url)) continue
+    const claimed = await db
+      .update(photoUploads)
+      .set({ catId: previous.id })
+      .where(isUnclaimed(url))
+      .returning({ url: photoUploads.url })
+    if (claimed.length === 0) throw new Error(ERR.PHOTO_NOT_YOURS)
+  }
+
   const rows = await db
     .update(cats)
     .set({
@@ -247,18 +424,29 @@ export async function updateCat(input: {
     .where(eq(cats.slug, input.slug))
     .returning()
 
-  // Photos the owner removed should not linger in storage.
+  // Photos the owner removed should not linger in storage — but only the ones
+  // this app actually issued for this cat.
   const kept = new Set(photos)
-  await removeBlobPhotos(
-    (previous.photos ?? []).filter((url) => url && !kept.has(url)),
-  )
+  const removed = previousPhotos.filter((url) => !kept.has(url) && owned.has(url))
+  await removeBlobPhotos(removed)
+  if (removed.length > 0) {
+    await db
+      .delete(photoUploads)
+      .where(
+        and(
+          eq(photoUploads.catId, previous.id),
+          inArray(photoUploads.url, removed),
+        ),
+      )
+  }
 
   return toDTO(rows[0])
 }
 
 /**
- * Best-effort removal of a cat's photos from Vercel Blob. Local `/uploads/...`
- * paths are left alone, and failures never block the delete.
+ * Best-effort removal of a cat's photos from Vercel Blob. Callers must pass
+ * only URLs recorded as belonging to that cat; local `/uploads/...` paths are
+ * left alone, and failures never block the delete.
  */
 async function removeBlobPhotos(urls: string[]): Promise<void> {
   if (!process.env.BLOB_READ_WRITE_TOKEN) return
@@ -278,19 +466,59 @@ export async function deleteCat(input: {
 }): Promise<void> {
   const db = await getDb()
   const row = await assertOwner(input.slug, input.token)
+  const owned = await photosOwnedBy(row.id)
   await db.delete(cats).where(eq(cats.slug, input.slug))
-  const photos =
-    row.photos && row.photos.length > 0 ? row.photos : [row.photoUrl]
-  await removeBlobPhotos(photos.filter(Boolean))
+  await removeBlobPhotos(owned)
 }
 
-export async function purrCat(slug: string): Promise<number> {
+export async function countRecentPurrsByIp(
+  ipHash: string,
+  windowMinutes: number,
+): Promise<number> {
   const db = await getDb()
+  const since = new Date(Date.now() - windowMinutes * 60_000)
+  const rows = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(purrs)
+    .where(and(eq(purrs.ipHash, ipHash), gt(purrs.createdAt, since)))
+  return rows[0]?.count ?? 0
+}
+
+/**
+ * Records one purr per (cat, visitor). Repeat purrs from the same visitor are
+ * idempotent, so the count cannot be inflated by reloading the page.
+ */
+export async function purrCat(
+  slug: string,
+  ipHash: string,
+): Promise<{ purrs: number; alreadyPurred: boolean }> {
+  const db = await getDb()
+  const found = await db
+    .select({ id: cats.id, purrs: cats.purrs })
+    .from(cats)
+    .where(eq(cats.slug, slug))
+    .limit(1)
+  const cat = found[0]
+  if (!cat) throw new Error(ERR.CAT_GONE)
+
+  const recent = await countRecentPurrsByIp(ipHash, 10)
+  if (recent >= LIMITS.purrsPer10min) throw new Error(ERR.RATE_LIMITED)
+
+  const inserted = await db
+    .insert(purrs)
+    .values({ catId: cat.id, ipHash })
+    .onConflictDoNothing()
+    .returning({ catId: purrs.catId })
+
+  if (inserted.length === 0) {
+    return { purrs: cat.purrs, alreadyPurred: true }
+  }
+
   const rows = await db
     .update(cats)
     .set({ purrs: sql`${cats.purrs} + 1` })
-    .where(eq(cats.slug, slug))
+    .where(eq(cats.id, cat.id))
     .returning({ purrs: cats.purrs })
-  if (!rows[0]) throw new Error(ERR.CAT_GONE)
-  return rows[0].purrs
+
+  return { purrs: rows[0]?.purrs ?? cat.purrs + 1, alreadyPurred: false }
 }
