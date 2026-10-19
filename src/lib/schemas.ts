@@ -1,16 +1,11 @@
 import { z } from 'zod'
-import { MAX_PHOTOS } from './types'
+import { COAT_OPTIONS, MAX_PHOTOS } from './types'
 
-const COAT_IDS = [
-  'orange',
-  'black',
-  'white',
-  'grey',
-  'tuxedo',
-  'calico',
-  'tabby',
-  'cream',
-] as const
+/** Derived from the picker so the server can never drift out of sync with it. */
+const COAT_IDS = COAT_OPTIONS.map((option) => option.id) as [
+  (typeof COAT_OPTIONS)[number]['id'],
+  ...(typeof COAT_OPTIONS)[number]['id'][],
+]
 
 const MIN_DATE = '1990-01-01'
 

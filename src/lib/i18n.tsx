@@ -16,7 +16,14 @@ type Verdict = (name: string) => string
 
 export type Dict = {
   langLabel: string
-  nav: { wall: string; addCat: string; myCats: string; how: string; letters: string }
+  nav: {
+    wall: string
+    addCat: string
+    myCats: string
+    how: string
+    letters: string
+    menu: string
+  }
   footer: {
     builtLead: string
     brand: string
@@ -189,6 +196,7 @@ export type Dict = {
     notOwnerHint: string
     viewCat: (name: string) => string
     coats: Record<CoatId, string>
+    coatDetected: string
     aiChecking: string
     aiCatOk: string
     aiNotCat: string
@@ -244,6 +252,7 @@ const en: Dict = {
     myCats: 'My cats',
     how: 'Age maths',
     letters: 'Year letters',
+    menu: 'Open menu',
   },
   footer: {
     builtLead: 'Built for cats who do not care, with',
@@ -461,15 +470,20 @@ const en: Dict = {
       'On another device? Open your private editing link (copy it from the device where you added the cat) and you will be recognised automatically.',
     viewCat: (name) => `View ${name}`,
     coats: {
-      orange: 'Ginger',
+      orange: 'Orange',
       black: 'Black',
-      white: 'Snow',
+      white: 'White',
       grey: 'Grey',
-      tuxedo: 'Tuxedo',
-      calico: 'Calico',
-      tabby: 'Tabby',
       cream: 'Cream',
+      tabby: 'Tabby',
+      tuxedo: 'Black & white',
+      'orange-white': 'Orange & white',
+      'grey-white': 'Grey & white',
+      'tabby-white': 'Tabby & white',
+      calico: 'Orange, white & black',
+      tortoiseshell: 'Tortoiseshell',
     },
+    coatDetected: 'Detected from the photo — change it if we got it wrong.',
     errPhotoMissing: 'Add a photo of your cat — this is the whole point.',
     errTooManyPhotos: 'That is a lot of photos. Eight is plenty.',
     errNameMissing: 'Your cat needs a name.',
@@ -593,6 +607,7 @@ const fr: Dict = {
     myCats: 'Mes chats',
     how: 'Calcul de l’âge',
     letters: 'Lettres des années',
+    menu: 'Ouvrir le menu',
   },
   footer: {
     builtLead: 'Conçu pour des chats qui s’en fichent, avec',
@@ -819,11 +834,16 @@ const fr: Dict = {
       black: 'Noir',
       white: 'Blanc',
       grey: 'Gris',
-      tuxedo: 'Tuxedo',
-      calico: 'Calico',
-      tabby: 'Tigré',
       cream: 'Crème',
+      tabby: 'Tigré',
+      tuxedo: 'Noir et blanc',
+      'orange-white': 'Roux et blanc',
+      'grey-white': 'Gris et blanc',
+      'tabby-white': 'Tigré et blanc',
+      calico: 'Roux, blanc et noir',
+      tortoiseshell: 'Écaille de tortue',
     },
+    coatDetected: 'Détecté sur la photo — corrigez si on s’est trompé.',
     errPhotoMissing: 'Ajoutez une photo de votre chat — c’est tout l’intérêt.',
     errTooManyPhotos: 'Ça fait beaucoup de photos. Huit, c’est déjà bien.',
     errNameMissing: 'Votre chat a besoin d’un nom.',

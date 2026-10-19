@@ -7,7 +7,9 @@ import {
   Scripts,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
 } from '@tanstack/react-router'
+import { Menu, Plus, X } from 'lucide-react'
 import * as React from 'react'
 import { DefaultCatchBoundary, NotFound } from '~/components/Boundaries'
 import { I18nProvider, localeFromMatches, useI18n } from '~/lib/i18n'
@@ -27,6 +29,8 @@ export const Route = createRootRouteWithContext<{
       meta: [
         { charSet: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
+        { name: 'application-name', content: 'Cat Years' },
+        { name: 'apple-mobile-web-app-title', content: 'Cat Years' },
         ...seo({
           title:
             locale === 'fr'
@@ -40,7 +44,20 @@ export const Route = createRootRouteWithContext<{
       ],
       links: [
         { rel: 'stylesheet', href: appCss },
+        { rel: 'icon', href: '/favicon.ico', sizes: '48x48' },
         { rel: 'icon', href: '/favicon.svg', type: 'image/svg+xml' },
+        {
+          rel: 'icon',
+          href: '/favicon-32.png',
+          type: 'image/png',
+          sizes: '32x32',
+        },
+        {
+          rel: 'apple-touch-icon',
+          href: '/apple-touch-icon.png',
+          sizes: '180x180',
+        },
+        { rel: 'manifest', href: '/manifest.webmanifest' },
         { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
         {
           rel: 'preconnect',
@@ -87,7 +104,7 @@ function LocaleToggle() {
     <div
       role="group"
       aria-label={i18n.langLabel}
-      className="ml-1 flex items-center rounded-full border-2 border-ink bg-paper p-0.5"
+      className="ml-1 flex shrink-0 items-center rounded-full border-2 border-ink bg-paper p-0.5"
     >
       {LOCALES.map((code) => {
         const active = i18n.locale === code
@@ -114,19 +131,22 @@ function NavLink({
   to,
   exact,
   children,
+  onNavigate,
 }: {
   to: string
   exact?: boolean
   children: React.ReactNode
+  onNavigate?: () => void
 }) {
   return (
     <Link
       to={to}
+      onClick={onNavigate}
       activeOptions={exact ? { exact: true } : undefined}
-      className="rounded-full px-2 py-1.5 text-xs font-bold text-ink-soft transition-colors hover:bg-cream hover:text-ink sm:px-2.5 sm:text-sm"
+      className="shrink-0 whitespace-nowrap rounded-full px-2 py-1.5 text-xs font-bold text-ink-soft transition-colors hover:bg-cream hover:text-ink sm:px-2.5 sm:text-sm"
       activeProps={{
         className:
-          'rounded-full px-2 py-1.5 text-xs font-bold bg-cream text-ink sm:px-2.5 sm:text-sm',
+          'shrink-0 whitespace-nowrap rounded-full px-2 py-1.5 text-xs font-bold bg-cream text-ink sm:px-2.5 sm:text-sm',
       }}
     >
       {children}
@@ -134,20 +154,45 @@ function NavLink({
   )
 }
 
+const MOBILE_MENU_ID = 'site-nav'
+
 function SiteHeader() {
   const i18n = useI18n()
+  const [open, setOpen] = React.useState(false)
+  const pathname = useRouterState({ select: (s) => s.location.pathname })
+
+  // Close the drawer whenever a navigation lands, including browser back/forward.
+  React.useEffect(() => {
+    setOpen(false)
+  }, [pathname])
+
+  React.useEffect(() => {
+    if (!open) return
+    function onKey(event: KeyboardEvent) {
+      if (event.key === 'Escape') setOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open])
+
   return (
     <header className="sticky top-0 z-50 border-b-2 border-ink/10 bg-paper/85 backdrop-blur-md">
-      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-4 gap-y-2 px-5 py-3">
-        <Link to="/" className="flex items-center gap-2.5">
-          <span className="grid size-10 place-items-center rounded-2xl border-2 border-ink bg-butter text-xl shadow-sticker-sm">
-            🐾
-          </span>
-          <span className="font-display text-2xl font-black tracking-tight">
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-2.5 sm:px-5 sm:py-3">
+        <Link to="/" className="flex min-w-0 items-center gap-2.5">
+          <img
+            src="/favicon.svg"
+            alt=""
+            width={40}
+            height={40}
+            className="size-9 shrink-0 sm:size-10"
+          />
+          <span className="truncate font-display text-xl font-black tracking-tight sm:text-2xl">
             Cat Years
           </span>
         </Link>
-        <nav className="flex flex-wrap items-center justify-end gap-1">
+
+        {/* Desktop navigation */}
+        <nav className="hidden items-center gap-1 md:flex">
           <NavLink to="/" exact>
             {i18n.nav.wall}
           </NavLink>
@@ -156,14 +201,94 @@ function SiteHeader() {
           <NavLink to="/lettres-annees">{i18n.nav.letters}</NavLink>
           <Link
             to="/new"
-            className="ml-1 inline-flex items-center gap-1.5 rounded-full border-2 border-ink bg-tangerine px-3 py-1.5 text-xs font-bold text-paper shadow-sticker-sm transition-transform hover:-translate-y-0.5 active:translate-y-0 sm:px-4 sm:py-2 sm:text-sm"
+            className="ml-1 inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border-2 border-ink bg-tangerine px-4 py-2 text-sm font-bold text-paper shadow-sticker-sm transition-transform hover:-translate-y-0.5 active:translate-y-0"
           >
             {i18n.nav.addCat}
           </Link>
           <LocaleToggle />
         </nav>
+
+        {/* Mobile controls */}
+        <div className="flex shrink-0 items-center gap-2 md:hidden">
+          <Link
+            to="/new"
+            aria-label={i18n.nav.addCat}
+            className="grid size-9 place-items-center rounded-full border-2 border-ink bg-tangerine text-paper shadow-sticker-sm active:translate-y-0 active:shadow-none"
+          >
+            <Plus className="size-5" aria-hidden />
+          </Link>
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            aria-expanded={open}
+            aria-controls={MOBILE_MENU_ID}
+            aria-label={i18n.nav.menu}
+            className="grid size-9 place-items-center rounded-full border-2 border-ink bg-paper shadow-sticker-sm active:translate-y-0 active:shadow-none"
+          >
+            {open ? (
+              <X className="size-5" aria-hidden />
+            ) : (
+              <Menu className="size-5" aria-hidden />
+            )}
+          </button>
+        </div>
       </div>
+
+      {open ? (
+        <div
+          id={MOBILE_MENU_ID}
+          className="border-t-2 border-ink/10 bg-paper px-4 pb-4 pt-2 md:hidden"
+        >
+          <nav className="flex flex-col gap-1">
+            <MobileNavLink to="/" exact onNavigate={() => setOpen(false)}>
+              {i18n.nav.wall}
+            </MobileNavLink>
+            <MobileNavLink to="/mes-chats" onNavigate={() => setOpen(false)}>
+              {i18n.nav.myCats}
+            </MobileNavLink>
+            <MobileNavLink to="/calcul-age" onNavigate={() => setOpen(false)}>
+              {i18n.nav.how}
+            </MobileNavLink>
+            <MobileNavLink to="/lettres-annees" onNavigate={() => setOpen(false)}>
+              {i18n.nav.letters}
+            </MobileNavLink>
+          </nav>
+          <div className="mt-3 flex items-center justify-between gap-3 border-t-2 border-ink/10 pt-3">
+            <span className="text-xs font-bold uppercase tracking-wider text-ink-soft">
+              {i18n.langLabel}
+            </span>
+            <LocaleToggle />
+          </div>
+        </div>
+      ) : null}
     </header>
+  )
+}
+
+function MobileNavLink({
+  to,
+  exact,
+  children,
+  onNavigate,
+}: {
+  to: string
+  exact?: boolean
+  children: React.ReactNode
+  onNavigate: () => void
+}) {
+  return (
+    <Link
+      to={to}
+      onClick={onNavigate}
+      activeOptions={exact ? { exact: true } : undefined}
+      className="rounded-2xl px-3 py-2.5 text-base font-bold text-ink-soft transition-colors hover:bg-cream hover:text-ink"
+      activeProps={{
+        className:
+          'rounded-2xl px-3 py-2.5 text-base font-bold bg-cream text-ink',
+      }}
+    >
+      {children}
+    </Link>
   )
 }
 

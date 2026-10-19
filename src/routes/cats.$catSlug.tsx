@@ -84,13 +84,13 @@ function CatDetail() {
 
       <div className="mt-6 grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:items-start">
         <div className="relative mx-auto w-full max-w-md lg:sticky lg:top-24">
-          <div className="tape rotate-[-1.5deg] rounded-[26px] border-2 border-ink bg-paper p-3 pb-20 shadow-sticker-lg">
+          <div className="tape rotate-[-1.5deg] rounded-[26px] border-2 border-ink bg-paper p-3 pb-24 shadow-sticker-lg sm:pb-20">
             <CatCarousel photos={cat.photos} name={cat.name} />
-            <div className="absolute inset-x-0 bottom-5 flex items-baseline justify-between gap-3 px-6">
-              <span className="truncate font-display text-3xl font-black">
+            <div className="absolute inset-x-0 bottom-4 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 px-4 sm:bottom-5 sm:flex-nowrap sm:px-6">
+              <span className="min-w-0 max-w-full truncate font-display text-2xl font-black sm:text-3xl">
                 {cat.name}
               </span>
-              <span className="shrink-0 text-xs font-bold uppercase tracking-wider text-ink-soft">
+              <span className="shrink-0 text-[11px] font-bold uppercase tracking-wider text-ink-soft sm:text-xs">
                 {coatLabel ? `${coatLabel} · ` : ''}
                 {i18n.formatDate(cat.birthdate)}
               </span>
@@ -107,7 +107,7 @@ function CatDetail() {
             <Chip tone="cream">{i18n.jobTitle(age)}</Chip>
           </div>
 
-          <h1 className="mt-5 text-5xl font-black sm:text-6xl">
+          <h1 className="mt-5 text-4xl font-black sm:text-6xl">
             {i18n.detail.reportCard(cat.name)}
           </h1>
           {cat.ownerName ? (
@@ -120,18 +120,18 @@ function CatDetail() {
           </p>
 
           <div className="mt-6 overflow-hidden rounded-[28px] border-2 border-ink bg-ink text-paper shadow-sticker">
-            <div className="flex flex-wrap items-end gap-x-4 gap-y-1 px-6 pt-6">
-              <span className="font-display text-8xl font-black leading-none text-butter">
+            <div className="flex flex-wrap items-end gap-x-4 gap-y-1 px-5 pt-6 sm:px-6">
+              <span className="font-display text-6xl font-black leading-none text-butter sm:text-8xl">
                 {i18n.humanAgeLabel(age)}
               </span>
-              <span className="pb-2 text-xl font-bold text-cream/90">
+              <span className="pb-2 text-lg font-bold text-cream/90 sm:text-xl">
                 {i18n.detail.humanYearsOld}
               </span>
             </div>
-            <p className="px-6 py-5 text-lg font-semibold text-cream/85">
+            <p className="px-5 py-5 text-base font-semibold text-cream/85 sm:px-6 sm:text-lg">
               {i18n.verdict(cat.name, age.humanYears)}
             </p>
-            <div className="flex flex-wrap gap-x-8 gap-y-2 border-t-2 border-paper/15 px-6 py-4 text-sm">
+            <div className="flex flex-wrap gap-x-8 gap-y-2 border-t-2 border-paper/15 px-5 py-4 text-sm sm:px-6">
               <span className="font-semibold text-cream/80">
                 {i18n.detail.catAge}:{' '}
                 <span className="font-black text-paper">
@@ -173,7 +173,7 @@ function CatDetail() {
                     </span>
                   ) : null}
                 </dd>
-                <dt className="mt-1.5 break-words text-[10px] font-bold uppercase leading-tight tracking-wide text-ink-soft">
+                <dt className="mt-1.5 break-words text-[11px] font-bold uppercase leading-tight tracking-wide text-ink-soft sm:text-[10px]">
                   {fact.label}
                 </dt>
               </div>

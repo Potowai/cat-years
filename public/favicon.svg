@@ -1,9 +1,70 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="16" fill="#FBF6EA"/>
-  <g fill="#EF6A2F" stroke="#241D18" stroke-width="2.4" stroke-linejoin="round">
-    <ellipse cx="21" cy="24" rx="6" ry="7.5"/>
-    <ellipse cx="32" cy="19" rx="6" ry="8"/>
-    <ellipse cx="43" cy="24" rx="6" ry="7.5"/>
-    <path d="M32 30c8 0 14 6 14 12 0 5-4 8-9 8-2 0-3.4-.8-5-.8S29.9 50 27.9 50c-5 0-9-3-9-8 0-6 6-12 13-12Z"/>
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Cat Years: a cat with a birthday candle">
+  <rect width="512" height="512" rx="112" fill="#EF6A2F"/>
+
+  <!-- Candle (drawn first so its base tucks behind the cat's forehead) -->
+  <path
+    d="M256 70c14 18 21 30 17 42-4 8-10 12-17 12s-13-4-17-12c-4-12 3-24 17-42Z"
+    fill="#F2C34A"
+    stroke="#241D18"
+    stroke-width="16"
+    stroke-linejoin="round"
+  />
+  <path
+    d="M256 96c6 8 8 14 6 18-2 4-4 5-6 5s-4-1-6-5c-2-4 0-10 6-18Z"
+    fill="#FBF6EA"
+  />
+  <path d="M256 124v20" stroke="#241D18" stroke-width="8" stroke-linecap="round"/>
+  <rect
+    x="236"
+    y="146"
+    width="40"
+    height="104"
+    rx="12"
+    fill="#FBF6EA"
+    stroke="#241D18"
+    stroke-width="16"
+  />
+
+  <!-- Cat head -->
+  <path
+    d="M256 424c-58 0-98-32-110-76-8-30-10-60-14-88l-16-28 28-120 70 86c10-6 32-10 42-10s32 4 42 10l70-86 28 120-16 28c-4 28-6 58-14 88-12 44-52 76-110 76Z"
+    fill="#FBF6EA"
+    stroke="#241D18"
+    stroke-width="20"
+    stroke-linejoin="round"
+  />
+
+  <!-- Inner ears -->
+  <path d="M154 208l-2-52 46 46Z" fill="#EC9A86"/>
+  <path d="M358 208l2-52-46 46Z" fill="#EC9A86"/>
+
+  <!-- Face -->
+  <ellipse cx="198" cy="310" rx="15" ry="19" fill="#241D18"/>
+  <ellipse cx="314" cy="310" rx="15" ry="19" fill="#241D18"/>
+  <circle cx="193" cy="303" r="5" fill="#FBF6EA"/>
+  <circle cx="309" cy="303" r="5" fill="#FBF6EA"/>
+
+  <path
+    d="M238 342c8-6 28-6 36 0-1 12-9 20-18 24-9-4-17-12-18-24Z"
+    fill="#EF6A2F"
+    stroke="#241D18"
+    stroke-width="10"
+    stroke-linejoin="round"
+  />
+  <path
+    d="M256 368v11M256 379c0 13-13 18-23 10M256 379c0 13 13 18 23 10"
+    fill="none"
+    stroke="#241D18"
+    stroke-width="10"
+    stroke-linecap="round"
+  />
+
+  <!-- Whiskers -->
+  <path
+    d="M150 330l-54-12M148 352l-56 0M154 372l-52 12M362 330l54-12M364 352l56 0M358 372l52 12"
+    fill="none"
+    stroke="#241D18"
+    stroke-width="10"
+    stroke-linecap="round"
+  />
 </svg>

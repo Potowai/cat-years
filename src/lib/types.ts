@@ -20,15 +20,27 @@ export type CatDTO = {
 
 export type CatSort = 'newest' | 'oldest' | 'senior' | 'popular' | 'name'
 
+/**
+ * The coat picker. Single colours first, then the combinations a cat can wear.
+ *
+ * `colors` is the swatch: one hex for a solid coat, two or three for a combo,
+ * drawn as slices. IDs are stable — they are stored on existing rows, so
+ * `tuxedo` and `calico` keep their identifiers even though the labels now spell
+ * the colours out.
+ */
 export const COAT_OPTIONS = [
-  { id: 'orange', label: 'Ginger', hex: '#F2A24B' },
-  { id: 'black', label: 'Black', hex: '#2B2A33' },
-  { id: 'white', label: 'Snow', hex: '#F4F0E6' },
-  { id: 'grey', label: 'Grey', hex: '#9AA0A6' },
-  { id: 'tuxedo', label: 'Tuxedo', hex: '#3A3A44' },
-  { id: 'calico', label: 'Calico', hex: '#D98A5B' },
-  { id: 'tabby', label: 'Tabby', hex: '#B58A5E' },
-  { id: 'cream', label: 'Cream', hex: '#E8D3B0' },
+  { id: 'orange', colors: ['#F2A24B'] },
+  { id: 'black', colors: ['#2B2A33'] },
+  { id: 'white', colors: ['#F4F0E6'] },
+  { id: 'grey', colors: ['#9AA0A6'] },
+  { id: 'cream', colors: ['#E8D3B0'] },
+  { id: 'tabby', colors: ['#B58A5E', '#7A5B3A'] },
+  { id: 'tuxedo', colors: ['#2B2A33', '#F4F0E6'] },
+  { id: 'orange-white', colors: ['#F2A24B', '#F4F0E6'] },
+  { id: 'grey-white', colors: ['#9AA0A6', '#F4F0E6'] },
+  { id: 'tabby-white', colors: ['#B58A5E', '#F4F0E6'] },
+  { id: 'calico', colors: ['#F2A24B', '#F4F0E6', '#2B2A33'] },
+  { id: 'tortoiseshell', colors: ['#2B2A33', '#C98A4B'] },
 ] as const
 
 export type CoatId = (typeof COAT_OPTIONS)[number]['id']

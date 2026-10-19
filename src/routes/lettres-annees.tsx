@@ -63,13 +63,13 @@ function YearLetters() {
       </header>
 
       <section className="mt-12 overflow-hidden rounded-[28px] border-2 border-ink bg-ink text-paper shadow-sticker">
-        <p className="px-6 pt-7 text-lg font-semibold text-cream/80">
+        <p className="px-5 pt-6 text-base font-semibold text-cream/80 sm:px-6 sm:pt-7 sm:text-lg">
           {l.thisYearIs(thisYear, thisLabel)}
         </p>
-        <p className="px-6 py-4 font-display text-[9rem] font-black leading-none text-butter">
+        <p className="break-words px-5 py-4 font-display text-6xl font-black leading-none text-butter sm:px-6 sm:text-8xl lg:text-[9rem]">
           {thisLabel}
         </p>
-        <p className="border-t-2 border-paper/15 px-6 py-4 text-sm font-semibold text-cream/85">
+        <p className="border-t-2 border-paper/15 px-5 py-4 text-sm font-semibold text-cream/85 sm:px-6">
           {l.cycle}
         </p>
       </section>
@@ -91,7 +91,7 @@ function YearLetters() {
                       <th
                         key={year}
                         scope="col"
-                        className="border-r-2 border-paper/20 px-2 py-2.5 text-sm font-black tracking-wide last:border-r-0"
+                        className="border-r-2 border-paper/20 px-1 py-2 text-xs font-black tracking-wide last:border-r-0 sm:px-2 sm:py-2.5 sm:text-sm"
                       >
                         {year}
                       </th>
@@ -108,15 +108,18 @@ function YearLetters() {
                           key={year}
                           className={
                             current
-                              ? 'border-r-2 border-ink/10 bg-butter px-2 py-4 last:border-r-0'
-                              : 'border-r-2 border-ink/10 bg-paper px-2 py-4 last:border-r-0'
+                              ? 'border-r-2 border-ink/10 bg-butter px-1 py-3 last:border-r-0 sm:px-2 sm:py-4'
+                              : 'border-r-2 border-ink/10 bg-paper px-1 py-3 last:border-r-0 sm:px-2 sm:py-4'
                           }
                         >
-                          <span className="font-display text-2xl font-black">
+                          <span className="block break-words font-display text-lg font-black leading-tight sm:hidden">
+                            {letters.join(' ')}
+                          </span>
+                          <span className="hidden font-display font-black leading-tight sm:inline sm:text-2xl">
                             {joinLetters(letters, l.or)}
                           </span>
                           {current ? (
-                            <span className="mt-1 block text-[10px] font-black uppercase tracking-wider">
+                            <span className="mt-1 block text-[10px] font-black uppercase leading-tight tracking-wider sm:text-[10px]">
                               {l.current}
                             </span>
                           ) : null}

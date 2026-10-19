@@ -36,15 +36,21 @@ export function CatCard({
             draggable={false}
             className="block w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]"
           />
-          <div className="absolute left-2.5 top-2.5">
-            <Chip tone={i18n.stageAccent(age.stageId)}>
+          <div className="absolute left-2 top-2 max-w-[calc(100%-1rem)] sm:left-2.5 sm:top-2.5">
+            <Chip
+              tone={i18n.stageAccent(age.stageId)}
+              className="max-w-full min-w-0 px-2 py-0.5 text-[10px] tracking-wide sm:px-3 sm:py-1 sm:text-xs sm:tracking-wider"
+            >
               <span aria-hidden>{i18n.stageEmoji(age.stageId)}</span>
-              {i18n.stageLabel(age.stageId)}
+              <span className="truncate min-w-0">{i18n.stageLabel(age.stageId)}</span>
             </Chip>
           </div>
           {cat.photos.length > 1 ? (
-            <div className="absolute right-2.5 top-2.5">
-              <Chip tone="cream">
+            <div className="absolute right-2 top-2 sm:right-2.5 sm:top-2.5">
+              <Chip
+                tone="cream"
+                className="px-2 py-0.5 text-[10px] sm:px-3 sm:py-1 sm:text-xs"
+              >
                 <Images className="size-3" aria-hidden />
                 {cat.photos.length}
               </Chip>
@@ -52,17 +58,17 @@ export function CatCard({
           ) : null}
         </div>
 
-        <div className="flex items-end justify-between gap-3 px-1.5 pb-1 pt-3">
-          <h3 className="min-w-0 truncate text-2xl font-black leading-none">
+        <div className="flex items-end justify-between gap-2 px-1.5 pb-1 pt-3 sm:gap-3">
+          <h3 className="min-w-0 truncate text-xl font-black leading-none sm:text-2xl">
             {cat.name}
           </h3>
-          <span className="flex shrink-0 items-center gap-1 text-sm font-bold text-ink-soft">
+          <span className="flex shrink-0 items-center gap-1 text-xs font-bold text-ink-soft sm:text-sm">
             <PawPrint className="size-4" aria-hidden />
             {i18n.formatNumber(cat.purrs)}
           </span>
         </div>
 
-        <p className="px-1.5 text-sm font-semibold text-ink-soft">
+        <p className="px-1.5 text-xs font-semibold text-ink-soft sm:text-sm">
           <span className="text-tangerine">{i18n.humanAgeLabel(age)}</span>{' '}
           {i18n.card.humanYears} &middot; {i18n.catAgeLabel(age)}
           {i18n.card.oldSuffix ? ` ${i18n.card.oldSuffix}` : ''}

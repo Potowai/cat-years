@@ -58,7 +58,7 @@ function Home() {
           <Chip tone="sage" className="animate-pop">
             {i18n.home.badge}
           </Chip>
-          <h1 className="mt-5 text-5xl font-black leading-[0.95] sm:text-7xl">
+          <h1 className="mt-5 text-4xl font-black leading-[0.95] sm:text-6xl lg:text-7xl">
             {i18n.home.titleBefore}
             <span className="relative inline-block">
               <span className="relative z-10 text-tangerine">
@@ -72,14 +72,24 @@ function Home() {
             {i18n.home.subtitle}
           </p>
           <div className="mt-7 flex flex-wrap items-center gap-3">
-            <Link to="/new" className={buttonClass({ size: 'lg' })}>
+            <Link
+              to="/new"
+              className={buttonClass({
+                size: 'lg',
+                className: 'px-5 text-base sm:px-7 sm:text-lg',
+              })}
+            >
               {i18n.home.ctaAdd}
-              <ArrowRight className="size-5" aria-hidden />
+              <ArrowRight className="size-5 shrink-0" aria-hidden />
             </Link>
             {hasCats ? (
               <a
                 href="#wall"
-                className={buttonClass({ variant: 'outline', size: 'lg' })}
+                className={buttonClass({
+                  variant: 'outline',
+                  size: 'lg',
+                  className: 'px-5 text-base sm:px-7 sm:text-lg',
+                })}
               >
                 {i18n.home.ctaSee(stats.cats)}
               </a>
@@ -132,7 +142,7 @@ function Home() {
       <section id="wall" className="scroll-mt-24 pt-12">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h2 className="text-4xl font-black">
+            <h2 className="text-3xl font-black sm:text-4xl">
               {i18n.home.wallTitle}{' '}
               <span className="text-ink-soft/60">/ {i18n.home.sorts[sort]}</span>
             </h2>
@@ -140,14 +150,14 @@ function Home() {
               {i18n.home.wallHint}
             </p>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="-mx-1 flex w-full gap-2 overflow-x-auto px-1 pb-1 hide-scrollbar sm:w-auto sm:flex-wrap sm:overflow-visible sm:pb-0">
             {SORTS.map((s) => (
               <Link
                 key={s}
                 to="/"
                 search={{ sort: s }}
                 className={cn(
-                  'rounded-full border-2 border-ink px-3.5 py-1.5 text-sm font-bold transition-colors',
+                  'shrink-0 rounded-full border-2 border-ink px-3 py-1.5 text-sm font-bold transition-colors sm:px-3.5',
                   sort === s
                     ? 'bg-ink text-paper'
                     : 'bg-paper text-ink hover:bg-cream',
@@ -162,7 +172,7 @@ function Home() {
         {cats.length === 0 ? (
           <EmptyWall />
         ) : (
-          <div className="mt-8 columns-2 gap-5 md:columns-3 lg:columns-4">
+          <div className="mt-8 columns-1 gap-4 min-[480px]:columns-2 sm:gap-5 md:columns-3 lg:columns-4">
             {cats.map((cat, i) => (
               <CatCard key={cat.id} cat={cat} index={i} />
             ))}

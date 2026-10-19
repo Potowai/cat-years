@@ -29,3 +29,20 @@ export function formatDate(iso: string, locale: string = 'en'): string {
 export function pluralize(n: number, one: string, many?: string): string {
   return n === 1 ? one : (many ?? `${one}s`)
 }
+
+/**
+ * A unique id for client-side list keys. `crypto.randomUUID` only exists in a
+ * secure context, so plain-http testing (a phone on the LAN) would otherwise
+ * throw the moment a photo is picked.
+ */
+export function newId(): string {
+  const c = typeof crypto !== 'undefined' ? crypto : undefined
+  if (c && typeof c.randomUUID === 'function') return c.randomUUID()
+  if (c && typeof c.getRandomValues === 'function') {
+    const bytes = c.getRandomValues(new Uint8Array(16))
+    return Array.from(bytes, (b: number) => b.toString(16).padStart(2, '0')).join(
+      '',
+    )
+  }
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`
+}

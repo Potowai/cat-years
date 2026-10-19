@@ -1,8 +1,9 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, type CSSProperties } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { ImagePlus, Loader2, X } from 'lucide-react'
 import { computeCatAge } from '~/lib/catAge'
 import { checkIsCat, type Prediction } from '~/lib/catCheck'
+import { inferCoat } from '~/lib/coatCheck'
 import { celebrate } from '~/lib/confetti'
 import { useI18n } from '~/lib/i18n'
 import { validateImage } from '~/lib/image'
@@ -18,7 +19,7 @@ import {
   type CatDTO,
   type CoatId,
 } from '~/lib/types'
-import { cn } from '~/lib/utils'
+import { cn, newId } from '~/lib/utils'
 import { uploadPhoto } from '~/lib/upload'
 import { createCatFn, updateCatFn } from '~/server/cats.functions'
 import { Button, buttonClass, Chip, Input, Label, Textarea } from './ui'
@@ -33,6 +34,16 @@ type AiStatus = 'idle' | 'checking' | 'ok' | 'not-cat' | 'error'
 
 type PhotoItem = { id: string; url: string; file?: File }
 
+/** One hex for a solid coat, an equal-slice pie for a combination. */
+function swatchStyle(colors: readonly string[]): CSSProperties {
+  if (colors.length === 1) return { backgroundColor: colors[0] }
+  const step = 360 / colors.length
+  const stops = colors
+    .map((color, i) => `${color} ${i * step}deg ${(i + 1) * step}deg`)
+    .join(', ')
+  return { backgroundImage: `conic-gradient(${stops})` }
+}
+
 function initialPhotos(initial?: CatDTO): PhotoItem[] {
   const urls =
     initial?.photos && initial.photos.length > 0
@@ -40,7 +51,7 @@ function initialPhotos(initial?: CatDTO): PhotoItem[] {
       : initial?.photoUrl
         ? [initial.photoUrl]
         : []
-  return urls.map((url) => ({ id: crypto.randomUUID(), url }))
+  return urls.map((url) => ({ id: newId(), url }))
 }
 
 export function CatForm({ mode, initial, token }: CatFormProps) {
@@ -48,6 +59,8 @@ export function CatForm({ mode, initial, token }: CatFormProps) {
   const navigate = useNavigate()
   const fileInput = useRef<HTMLInputElement>(null)
   const checkId = useRef(0)
+  /** True once the owner has touched the picker; stops the photo guessing. */
+  const coatLocked = useRef(Boolean(initial?.coat))
 
   const [photos, setPhotos] = useState<PhotoItem[]>(() => initialPhotos(initial))
   const [name, setName] = useState(initial?.name ?? '')
@@ -63,6 +76,8 @@ export function CatForm({ mode, initial, token }: CatFormProps) {
   const [aiStatus, setAiStatus] = useState<AiStatus>('idle')
   const [aiReview, setAiReview] = useState<Prediction[] | null>(null)
   const [aiOverridden, setAiOverridden] = useState(false)
+  /** The coat we filled in from the photo, so we can say so. */
+  const [coatAuto, setCoatAuto] = useState<CoatId | null>(null)
 
   const age = birthdate ? computeCatAge(birthdate) : null
   const today = new Date().toISOString().slice(0, 10)
@@ -74,6 +89,7 @@ export function CatForm({ mode, initial, token }: CatFormProps) {
     setAiReview(null)
     setAiOverridden(false)
     void (async () => {
+      let approved: { file: File; predictions: Prediction[] } | null = null
       for (const item of items) {
         if (!item.file) continue
         const result = await checkIsCat(item.file)
@@ -85,8 +101,21 @@ export function CatForm({ mode, initial, token }: CatFormProps) {
           setAiStatus('not-cat')
           return
         }
+        if (result.status === 'ok' && !approved) {
+          approved = { file: item.file, predictions: result.predictions }
+        }
       }
-      if (id === checkId.current) setAiStatus('ok')
+      if (id !== checkId.current) return
+      setAiStatus('ok')
+
+      // It is a cat, so read the coat off the photo and pre-select it. Never
+      // overrides a coat the owner picked themselves, and stays silent when the
+      // colours are inconclusive.
+      if (!approved || coatLocked.current) return
+      const guess = await inferCoat(approved.file, approved.predictions)
+      if (!guess || id !== checkId.current || coatLocked.current) return
+      setCoat(guess.coat)
+      setCoatAuto(guess.coat)
     })()
   }
 
@@ -103,7 +132,7 @@ export function CatForm({ mode, initial, token }: CatFormProps) {
         continue
       }
       accepted.push({
-        id: crypto.randomUUID(),
+        id: newId(),
         url: URL.createObjectURL(file),
         file,
       })
@@ -127,6 +156,7 @@ export function CatForm({ mode, initial, token }: CatFormProps) {
     setAiStatus('idle')
     setAiReview(null)
     setAiOverridden(false)
+    setCoatAuto(null)
     setError(null)
   }
 
@@ -379,7 +409,11 @@ export function CatForm({ mode, initial, token }: CatFormProps) {
                 <button
                   key={option.id}
                   type="button"
-                  onClick={() => setCoat(active ? undefined : option.id)}
+                  onClick={() => {
+                    coatLocked.current = true
+                    setCoatAuto(null)
+                    setCoat(active ? undefined : option.id)
+                  }}
                   className={cn(
                     'flex items-center gap-2 rounded-full border-2 border-ink px-3 py-1.5 text-sm font-bold transition-transform',
                     active
@@ -389,7 +423,7 @@ export function CatForm({ mode, initial, token }: CatFormProps) {
                 >
                   <span
                     className="size-4 rounded-full border-2 border-ink"
-                    style={{ backgroundColor: option.hex }}
+                    style={swatchStyle(option.colors)}
                     aria-hidden
                   />
                   {i18n.form.coats[option.id]}
@@ -397,6 +431,11 @@ export function CatForm({ mode, initial, token }: CatFormProps) {
               )
             })}
           </div>
+          {coatAuto !== null && coatAuto === coat && (
+            <p className="mt-2 text-xs font-semibold opacity-70">
+              {i18n.form.coatDetected}
+            </p>
+          )}
         </div>
 
         <div>
@@ -488,21 +527,48 @@ export function CatForm({ mode, initial, token }: CatFormProps) {
           </div>
         </div>
 
+        <div className="hidden lg:block">
+          {error ? (
+            <p
+              role="alert"
+              className="mt-4 rounded-2xl border-2 border-ink bg-blush px-4 py-3 text-sm font-bold shadow-sticker-sm"
+            >
+              {error}
+            </p>
+          ) : null}
+
+          <Button
+            type="submit"
+            size="lg"
+            disabled={submitting}
+            className="mt-4 w-full"
+          >
+            {submitting ? (
+              <>
+                <Loader2 className="size-5 animate-spin" aria-hidden />
+                {mode === 'create' ? i18n.form.submitting : i18n.form.saving}
+              </>
+            ) : (
+              <>
+                {mode === 'create' ? i18n.form.submitCreate : i18n.form.submitEdit}
+              </>
+            )}
+          </Button>
+        </div>
+      </aside>
+
+      {/* On phones the form is one long column, so the action bar is pinned
+          to the bottom of the screen instead of hiding after the preview. */}
+      <div className="sticky bottom-0 z-30 -mx-5 mt-2 border-t-2 border-ink/10 bg-paper/95 px-5 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur-md lg:hidden">
         {error ? (
           <p
             role="alert"
-            className="mt-4 rounded-2xl border-2 border-ink bg-blush px-4 py-3 text-sm font-bold shadow-sticker-sm"
+            className="mb-3 rounded-2xl border-2 border-ink bg-blush px-4 py-2.5 text-sm font-bold shadow-sticker-sm"
           >
             {error}
           </p>
         ) : null}
-
-        <Button
-          type="submit"
-          size="lg"
-          disabled={submitting}
-          className="mt-4 w-full"
-        >
+        <Button type="submit" size="lg" disabled={submitting} className="w-full">
           {submitting ? (
             <>
               <Loader2 className="size-5 animate-spin" aria-hidden />
@@ -514,7 +580,7 @@ export function CatForm({ mode, initial, token }: CatFormProps) {
             </>
           )}
         </Button>
-      </aside>
+      </div>
     </form>
   )
 }

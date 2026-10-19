@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useI18n } from '~/lib/i18n'
 import { cn } from '~/lib/utils'
@@ -17,13 +17,29 @@ export function CatCarousel({
   const total = list.length
   const [index, setIndex] = useState(0)
   const current = Math.min(index, total - 1)
+  const touchX = useRef<number | null>(null)
 
   function go(step: number) {
     setIndex((i) => (i + step + total) % total)
   }
 
+  function onTouchStart(event: React.TouchEvent) {
+    if (total < 2) return
+    touchX.current = event.touches[0]?.clientX ?? null
+  }
+
+  function onTouchEnd(event: React.TouchEvent) {
+    if (total < 2 || touchX.current === null) return
+    const end = event.changedTouches[0]?.clientX ?? touchX.current
+    const dx = end - touchX.current
+    touchX.current = null
+    // Ignore taps and tiny wobbles; 40px is a deliberate swipe.
+    if (Math.abs(dx) < 40) return
+    go(dx < 0 ? 1 : -1)
+  }
+
   const arrow =
-    'absolute top-1/2 z-10 grid size-9 -translate-y-1/2 place-items-center rounded-full border-2 border-ink bg-paper/90 shadow-sticker-sm transition-transform hover:-translate-y-1/2 hover:scale-105 active:scale-95'
+    'absolute top-1/2 z-10 grid size-10 -translate-y-1/2 place-items-center rounded-full border-2 border-ink bg-paper/90 shadow-sticker-sm transition-transform hover:-translate-y-1/2 hover:scale-105 active:scale-95 sm:size-9'
 
   return (
     <div
@@ -32,6 +48,8 @@ export function CatCarousel({
       aria-roledescription="carousel"
       aria-label={total > 1 ? i18n.detail.photoOf(current + 1, total) : name}
       tabIndex={total > 1 ? 0 : undefined}
+      onTouchStart={onTouchStart}
+      onTouchEnd={onTouchEnd}
       onKeyDown={(event) => {
         if (total < 2) return
         if (event.key === 'ArrowLeft') {
