@@ -39,10 +39,19 @@ const UNIFORM_EDGE = 0.5
  * frame, or the background does.
  */
 const BACKGROUND_REMOVAL_MIN = 0.35
-/** Share one colour must own of the middle to be believed without subtraction. */
-const FALLBACK_SOLID = 0.55
-/** Grey and cream are also the colours of asphalt, sand and overcast sky. */
-const FALLBACK_NEUTRAL = 0.8
+/**
+ * Without a subtraction, one colour must own this much of the middle. The bar
+ * differs per colour: grey and cream are also what asphalt, concrete, sand and
+ * overcast sky look like, while nothing much that is orange is a backdrop.
+ */
+const FALLBACK_FLOOR: Shares = {
+  orange: 0.5,
+  brown: 0.55,
+  black: 0.6,
+  white: 0.72,
+  grey: 0.8,
+  cream: 0.8,
+}
 /** …or a combination may be this confident instead of one dominant colour. */
 const FALLBACK_COMBO = 0.85
 /** Minimum share for the strongest solid colour to be trusted on its own. */
@@ -100,11 +109,12 @@ export function bucketOf(r: number, g: number, b: number): Fur | null {
   const { h, s, v } = hueSatVal(r, g, b)
 
   // Near-neutral: white, black or grey. Blue-leaning light is sky or shade,
-  // not fur — that single test removes most skies.
+  // not fur — that single test removes most skies. The black threshold is
+  // generous because black fur photographs well above pure black.
   if (s <= 0.2) {
     if (b - r > 0.09) return null
     if (v >= 0.78) return 'white'
-    if (v <= 0.22) return 'black'
+    if (v <= 0.33) return 'black'
     return 'grey'
   }
 
@@ -195,11 +205,11 @@ export function readFur(data: Uint8ClampedArray): FurRead | null {
   const raw = normalise(innerCounts, innerFur)
   if (!raw) return null
   const top = FUR_KEYS.reduce((a, b) => (raw[b] > raw[a] ? b : a))
-  if (raw[top] >= (top === 'grey' || top === 'cream' ? FALLBACK_NEUTRAL : FALLBACK_SOLID)) {
-    return { shares: raw, coverage }
-  }
+  if (raw[top] >= FALLBACK_FLOOR[top]) return { shares: raw, coverage }
+
   const combo = coatFromShares(raw)
-  if (combo && combo.coat !== 'grey' && combo.coat !== 'cream' && combo.confidence >= FALLBACK_COMBO) {
+  const neutral = combo?.coat === 'grey' || combo?.coat === 'cream'
+  if (combo && !neutral && combo.confidence >= FALLBACK_COMBO) {
     return { shares: raw, coverage }
   }
   return null
