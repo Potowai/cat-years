@@ -78,7 +78,8 @@ function LocaleToggle() {
 
   function choose(next: Locale) {
     if (next === i18n.locale) return
-    document.cookie = `locale=${next}; path=/; max-age=31536000; samesite=lax`
+    const secure = window.location.protocol === 'https:' ? '; secure' : ''
+    document.cookie = `locale=${next}; path=/; max-age=31536000; samesite=lax${secure}`
     void router.invalidate()
   }
 

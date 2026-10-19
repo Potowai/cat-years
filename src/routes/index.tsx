@@ -2,11 +2,10 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import { ArrowRight, Cat, PawPrint } from 'lucide-react'
 import { CatCard } from '~/components/CatCard'
 import { buttonClass, Chip } from '~/components/ui'
-import { computeCatAge } from '~/lib/catAge'
 import { useI18n } from '~/lib/i18n'
 import type { CatSort } from '~/lib/types'
 import { cn } from '~/lib/utils'
-import { listCatsFn } from '~/server/cats.functions'
+import { getWallStatsFn, listCatsFn } from '~/server/cats.functions'
 
 const SORTS = ['newest', 'oldest', 'senior', 'popular', 'name'] as const
 
@@ -21,7 +20,14 @@ export const Route = createFileRoute('/')({
     sort: parseSort(search.sort),
   }),
   loaderDeps: ({ search }) => ({ sort: search.sort ?? 'newest' }),
-  loader: ({ deps }) => listCatsFn({ data: { sort: deps.sort } }),
+  loader: async ({ deps }) => {
+    // Totals come from every cat; only the wall itself is capped at one page.
+    const [cats, stats] = await Promise.all([
+      listCatsFn({ data: { sort: deps.sort } }),
+      getWallStatsFn(),
+    ])
+    return { cats, stats }
+  },
   component: Home,
 })
 
@@ -40,20 +46,10 @@ function Stat({ value, label }: { value: string; label: string }) {
 
 function Home() {
   const i18n = useI18n()
-  const cats = Route.useLoaderData()
+  const { cats, stats } = Route.useLoaderData()
   const sort = Route.useSearch().sort ?? 'newest'
 
-  const totalPurrs = cats.reduce((sum, c) => sum + c.purrs, 0)
-  const ages = cats.map((c) => computeCatAge(c.birthdate))
-  const avgHuman = ages.length
-    ? Math.round(
-        ages.reduce((sum, a) => sum + a.humanYears, 0) / ages.length,
-      )
-    : 0
-  const oldest = ages.reduce<(typeof ages)[number] | null>(
-    (best, a) => (!best || a.humanYears > best.humanYears ? a : best),
-    null,
-  )
+  const hasCats = stats.cats > 0
 
   return (
     <div className="mx-auto max-w-6xl px-5">
@@ -80,30 +76,33 @@ function Home() {
               {i18n.home.ctaAdd}
               <ArrowRight className="size-5" aria-hidden />
             </Link>
-            {cats.length > 0 ? (
+            {hasCats ? (
               <a
                 href="#wall"
                 className={buttonClass({ variant: 'outline', size: 'lg' })}
               >
-                {i18n.home.ctaSee(cats.length)}
+                {i18n.home.ctaSee(stats.cats)}
               </a>
             ) : null}
           </div>
         </div>
 
-        {cats.length > 0 ? (
+        {hasCats ? (
           <div className="mt-10 grid max-w-2xl grid-cols-2 gap-3 sm:grid-cols-4">
             <Stat
-              value={i18n.formatNumber(cats.length)}
+              value={i18n.formatNumber(stats.cats)}
               label={i18n.home.statCats}
             />
             <Stat
-              value={i18n.formatNumber(totalPurrs)}
+              value={i18n.formatNumber(stats.purrs)}
               label={i18n.home.statPurrs}
             />
-            <Stat value={`${avgHuman}`} label={i18n.home.statAvg} />
             <Stat
-              value={oldest ? `${Math.round(oldest.humanYears)}` : '—'}
+              value={`${Math.round(stats.avgHumanYears)}`}
+              label={i18n.home.statAvg}
+            />
+            <Stat
+              value={hasCats ? `${Math.round(stats.oldestHumanYears)}` : '—'}
               label={i18n.home.statOldest}
             />
           </div>

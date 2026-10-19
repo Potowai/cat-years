@@ -12,6 +12,7 @@ import {
   getOwnerToken,
   getOwnership,
   listOwnedIds,
+  peekOwnerToken,
   rememberOwnerName,
   setOwnerToken,
 } from '~/lib/tokens'
@@ -52,17 +53,39 @@ function MyCats() {
   const [saved, setSaved] = useState(false)
   const [copied, setCopied] = useState(false)
   const [claimed, setClaimed] = useState(0)
+  const [pendingToken, setPendingToken] = useState<string | null>(null)
 
   // Adopt an owner link (`?token=…`) or fall back to this browser's key.
   useEffect(() => {
     if (urlToken) {
-      setOwnerToken(urlToken)
-      setToken(urlToken)
+      // Drop the token from the address bar either way, so it does not linger
+      // in history or screenshots.
       void navigate({ to: '/mes-chats', search: {}, replace: true })
+      const existing = peekOwnerToken()
+      if (!existing || existing === urlToken) {
+        setOwnerToken(urlToken)
+        setToken(urlToken)
+        return
+      }
+      // A link from someone else must never silently replace the cats this
+      // device already owns — that would hand them the keys to your cats.
+      setPendingToken(urlToken)
       return
     }
     setToken(getOwnerToken())
   }, [urlToken, navigate])
+
+  function adoptPendingToken() {
+    if (!pendingToken) return
+    setOwnerToken(pendingToken)
+    setToken(pendingToken)
+    setPendingToken(null)
+  }
+
+  function keepThisDevice() {
+    setPendingToken(null)
+    setToken(getOwnerToken())
+  }
 
   useEffect(() => {
     setName(getOwnerName())
@@ -160,6 +183,30 @@ function MyCats() {
         </p>
       </header>
 
+      {pendingToken ? (
+        <div className="mt-8 rounded-[28px] border-2 border-ink bg-butter/60 px-6 py-5 shadow-sticker-sm">
+          <h2 className="text-xl font-black">{i18n.myCats.confirmTitle}</h2>
+          <p className="mt-2 max-w-2xl font-medium text-ink-soft">
+            {i18n.myCats.confirmText}
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={adoptPendingToken}
+              className={buttonClass({ size: 'sm' })}
+            >
+              {i18n.myCats.confirmUse}
+            </button>
+            <button
+              type="button"
+              onClick={keepThisDevice}
+              className={buttonClass({ variant: 'outline', size: 'sm' })}
+            >
+              {i18n.myCats.confirmKeep}
+            </button>
+          </div>
+        </div>
+      ) : (
       <div className="mt-10 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.8fr)] lg:items-start">
         <section>
           {cats === null ? (
@@ -253,6 +300,7 @@ function MyCats() {
           </div>
         </aside>
       </div>
+      )}
     </div>
   )
 }

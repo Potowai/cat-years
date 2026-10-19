@@ -11,5 +11,25 @@ export default defineConfig({
   resolve: {
     tsconfigPaths: true,
   },
-  plugins: [tailwindcss(), tanstackStart(), nitro(), viteReact()],
+  plugins: [
+    tailwindcss(),
+    tanstackStart(),
+    nitro({
+      routeRules: {
+        // Baseline hardening for every response. A Content-Security-Policy is
+        // deliberately absent: this app inlines scripts and loads TensorFlow.js
+        // WASM, so a strict policy needs testing before it can be switched on.
+        '/**': {
+          headers: {
+            'x-content-type-options': 'nosniff',
+            'referrer-policy': 'strict-origin-when-cross-origin',
+            'x-frame-options': 'DENY',
+            'permissions-policy': 'geolocation=(), microphone=(), camera=()',
+            'strict-transport-security': 'max-age=63072000; includeSubDomains',
+          },
+        },
+      },
+    }),
+    viteReact(),
+  ],
 })
