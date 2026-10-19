@@ -120,7 +120,7 @@ export function bucketOf(r: number, g: number, b: number): Fur | null {
 
   // Warm hues are the only ones a cat wears (ginger, cream, tabby brown).
   if (h >= 8 && h <= 62) {
-    if (s >= 0.42 && v >= 0.52) return 'orange'
+    if (s >= 0.55 && v >= 0.52) return 'orange'
     if (v >= 0.72) return 'cream'
     return 'brown'
   }
