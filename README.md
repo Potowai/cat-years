@@ -81,6 +81,10 @@ npm run seed
    npm run db:push
    ```
 
+   The app also re-applies the same idempotent schema on first connect, so a
+   table added by a later deploy is created automatically and `db:push` is only
+   needed for schema *changes* (renames, drops, type changes).
+
 5. Deploy. Done.
 
 > `npm run build` runs `vite build` (which emits the Nitro `.output` used by

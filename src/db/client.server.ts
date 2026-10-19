@@ -10,8 +10,8 @@ type DbGlobal = typeof globalThis & {
 
 /**
  * Schema for the embedded PGlite database used in local development, and by
- * `scripts/seed.ts`. In production the same schema is applied with
- * `npm run db:push` from `./schema.ts`, so keep the two in sync.
+ * `scripts/seed.ts`. In production the same schema is applied on first connect
+ * (and by `npm run db:push`), so keep it in sync with `./schema.ts`.
  */
 export const DDL = `
 CREATE TABLE IF NOT EXISTS cats (
@@ -53,12 +53,51 @@ CREATE TABLE IF NOT EXISTS purrs (
 CREATE INDEX IF NOT EXISTS purrs_created_at_idx ON purrs (created_at);
 `
 
+/** The slice of the postgres.js client needed to apply the schema. */
+type RawSqlClient = { unsafe: (query: string) => Promise<unknown> }
+
+/**
+ * Bring a production database up to date with the code.
+ *
+ * The tables are created once with `npm run db:push`, but a schema added in a
+ * later deploy — a new table like `photo_uploads` — would otherwise only show
+ * up as an opaque 500 on the first request that needs it. Re-applying the
+ * idempotent DDL on first connect keeps the database in step with the code.
+ *
+ * Best-effort: if the database user cannot run DDL, we log and carry on rather
+ * than taking the whole app down over it.
+ */
+async function ensureSchema(client: RawSqlClient): Promise<void> {
+  try {
+    // No parameters means postgres.js uses the simple protocol, which allows
+    // several statements in one round trip.
+    await client.unsafe(DDL)
+  } catch (error) {
+    console.error(
+      '[cat-years] could not apply the database schema — run ' +
+        '`npm run db:push` against DATABASE_URL.',
+      error,
+    )
+  }
+}
+
 async function createPostgresDb(url: string): Promise<Database> {
   const [{ drizzle }, { default: postgres }] = await Promise.all([
     import('drizzle-orm/postgres-js'),
     import('postgres'),
   ])
-  const client = postgres(url, { prepare: false, max: 1 })
+  const client = postgres(url, {
+    prepare: false,
+    max: 1,
+    // The schema below is idempotent, so Postgres reports each object it skips
+    // on every cold start. Drop that noise; keep every other notice.
+    onnotice: (notice) => {
+      if (!notice.message?.includes('already exists, skipping')) {
+        console.warn('[cat-years]', notice.message)
+      }
+    },
+  })
+  await ensureSchema(client)
   return drizzle(client, { schema })
 }
 
