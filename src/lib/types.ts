@@ -21,6 +21,24 @@ export type CatDTO = {
 export type CatSort = 'newest' | 'oldest' | 'senior' | 'popular' | 'name'
 
 /**
+ * What one visitor has left to spend on one cat in the current purr window.
+ *
+ * The detail page ships this with the cat so the button can stop on the tap
+ * that exhausts the budget, instead of counting optimistically and only
+ * finding out a round trip later.
+ */
+export type PurrBudget = {
+  /** Purrs still allowed in the current window. */
+  remaining: number
+  /** Full size of a window (the per-visitor cap). */
+  limit: number
+  /** Window length in milliseconds. */
+  windowMs: number
+  /** When the open window ends (epoch ms), or null when none is open. */
+  windowEndsAt: number | null
+}
+
+/**
  * The coat picker. Single colours first, then the combinations a cat can wear.
  *
  * `colors` is the swatch: one hex for a solid coat, two or three for a combo,

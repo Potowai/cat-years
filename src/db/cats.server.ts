@@ -2,7 +2,7 @@ import { and, asc, desc, eq, gt, inArray, isNull, like, sql } from 'drizzle-orm'
 import { computeCatAge } from '~/lib/catAge'
 import { ERR } from '~/lib/errors'
 import { constantTimeEqual, createToken, hashToken } from '~/lib/tokens'
-import { MAX_PHOTOS, type CatDTO, type CatSort } from '~/lib/types'
+import { MAX_PHOTOS, type CatDTO, type CatSort, type PurrBudget } from '~/lib/types'
 import { slugify } from '~/lib/utils'
 import { getDb } from './client.server'
 import { cats, photoUploads, purrs, type CatRow } from './schema'
@@ -19,6 +19,32 @@ const LIMITS = {
   uploadsPer10min: Number(process.env.MAX_UPLOADS_PER_10MIN ?? 20),
   uploadsPerDay: Number(process.env.MAX_UPLOADS_PER_DAY ?? 120),
   purrsPerMinute: Number(process.env.MAX_PURRS_PER_MIN ?? 100),
+}
+
+/** How long a visitor's purr budget lasts before it tops up again. */
+const PURR_WINDOW_MS = 60_000
+
+/**
+ * Window bookkeeping shared by the read (budget) and write (purr) paths, so a
+ * page render and a tap always describe the visitor's allowance the same way.
+ */
+function purrBudgetFrom(
+  row: { count: number; windowStartedAt: Date } | undefined,
+  now: number,
+): PurrBudget {
+  const limit = LIMITS.purrsPerMinute
+  if (row) {
+    const windowEndsAt = row.windowStartedAt.getTime() + PURR_WINDOW_MS
+    if (windowEndsAt > now) {
+      return {
+        remaining: Math.max(0, limit - row.count),
+        limit,
+        windowMs: PURR_WINDOW_MS,
+        windowEndsAt,
+      }
+    }
+  }
+  return { remaining: limit, limit, windowMs: PURR_WINDOW_MS, windowEndsAt: null }
 }
 
 function toDTO(row: CatRow): CatDTO {
@@ -472,6 +498,33 @@ export async function deleteCat(input: {
 }
 
 /**
+ * What this visitor may still spend on this cat, for the detail page's loader.
+ * Reading the budget up front lets the button refuse the tap that would cross
+ * the line instead of discovering it a round trip later.
+ */
+export async function purrBudget(
+  slug: string,
+  ipHash: string,
+): Promise<PurrBudget> {
+  const db = await getDb()
+  const found = await db
+    .select({ id: cats.id })
+    .from(cats)
+    .where(eq(cats.slug, slug))
+    .limit(1)
+  const cat = found[0]
+  if (!cat) return purrBudgetFrom(undefined, Date.now())
+
+  const [row] = await db
+    .select({ count: purrs.count, windowStartedAt: purrs.windowStartedAt })
+    .from(purrs)
+    .where(and(eq(purrs.catId, cat.id), eq(purrs.ipHash, ipHash)))
+    .limit(1)
+
+  return purrBudgetFrom(row, Date.now())
+}
+
+/**
  * Purring is unlimited but rate limited: a visitor gets `LIMITS.purrsPerMinute`
  * purrs per cat per rolling minute, then has to wait it out. A burst that
  * crosses the line still banks the purrs that fit and reports `limited`.
@@ -488,7 +541,7 @@ export async function purrCat(
   purrs: number
   applied: number
   limited: boolean
-  retryAfterMs: number
+  budget: PurrBudget
 }> {
   const db = await getDb()
   const found = await db
@@ -518,22 +571,29 @@ export async function purrCat(
       .from(purrs)
       .where(where)
       .for('update')
-    if (!row) return { applied: 0, purrs: cat.purrs, retryAfterMs: 0 }
+    if (!row) {
+      return {
+        applied: 0,
+        purrs: cat.purrs,
+        budget: purrBudgetFrom(undefined, now.getTime()),
+      }
+    }
 
-    const windowOpen = now.getTime() - row.windowStartedAt.getTime() < 60_000
+    const windowOpen = now.getTime() - row.windowStartedAt.getTime() < PURR_WINDOW_MS
     const spent = windowOpen ? row.count : 0
     const room = Math.min(n, Math.max(0, limit - spent))
-    const retryAfterMs = windowOpen
-      ? Math.max(0, row.windowStartedAt.getTime() + 60_000 - now.getTime())
-      : 60_000
-    if (room === 0) return { applied: 0, purrs: cat.purrs, retryAfterMs }
+    if (room === 0) {
+      return {
+        applied: 0,
+        purrs: cat.purrs,
+        budget: purrBudgetFrom(row, now.getTime()),
+      }
+    }
 
+    const windowStartedAt = windowOpen ? row.windowStartedAt : now
     await tx
       .update(purrs)
-      .set({
-        count: spent + room,
-        windowStartedAt: windowOpen ? row.windowStartedAt : now,
-      })
+      .set({ count: spent + room, windowStartedAt })
       .where(where)
 
     const rows = await tx
@@ -545,7 +605,10 @@ export async function purrCat(
     return {
       applied: room,
       purrs: rows[0]?.purrs ?? cat.purrs + room,
-      retryAfterMs: room < n ? retryAfterMs : 0,
+      budget: purrBudgetFrom(
+        { count: spent + room, windowStartedAt },
+        now.getTime(),
+      ),
     }
   })
 

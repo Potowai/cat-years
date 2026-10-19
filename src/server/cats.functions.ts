@@ -89,3 +89,15 @@ export const purrCatFn = createServerFn({ method: 'POST' })
     const ipHash = await ipHashFromRequest()
     return repo.purrCat(data.slug, ipHash, data.count)
   })
+
+/**
+ * The visitor's purr allowance for one cat, fetched with the detail page so
+ * the button knows where the line is before the first tap. POST, not GET:
+ * the answer depends on the caller's address, so it must never be cached.
+ */
+export const purrBudgetFn = createServerFn({ method: 'POST' })
+  .validator(z.object({ slug: z.string().min(1) }))
+  .handler(async ({ data }) => {
+    const ipHash = await ipHashFromRequest()
+    return repo.purrBudget(data.slug, ipHash)
+  })

@@ -10,33 +10,38 @@ import { getDict, localeFromMatches, useI18n } from '~/lib/i18n'
 import { seo } from '~/lib/seo'
 import type { CoatId } from '~/lib/types'
 import { formatDate } from '~/lib/utils'
-import { getCatFn } from '~/server/cats.functions'
+import { getCatFn, purrBudgetFn } from '~/server/cats.functions'
 
 export const Route = createFileRoute('/cats/$catSlug')({
   loader: async ({ params }) => {
-    const cat = await getCatFn({ data: { slug: params.catSlug } })
+    // The visitor's purr allowance travels with the cat so the button can
+    // refuse the tap that crosses the line without waiting for a round trip.
+    const [cat, budget] = await Promise.all([
+      getCatFn({ data: { slug: params.catSlug } }),
+      purrBudgetFn({ data: { slug: params.catSlug } }),
+    ])
     if (!cat) throw notFound()
-    return cat
+    return { cat, budget }
   },
   head: ({ loaderData, matches }) => {
     if (!loaderData) return {}
     const locale = localeFromMatches(matches)
     const d = getDict(locale)
-    const age = computeCatAge(loaderData.birthdate)
+    const age = computeCatAge(loaderData.cat.birthdate)
     const humanLabel =
       age.humanYears < 1
         ? d.units.notEvenOne
         : Math.round(age.humanYears).toString()
-    const image = /^https:\/\//.test(loaderData.photoUrl)
-      ? loaderData.photoUrl
+    const image = /^https:\/\//.test(loaderData.cat.photoUrl)
+      ? loaderData.cat.photoUrl
       : undefined
     return {
       meta: seo({
-        title: d.seo.catTitle(loaderData.name, humanLabel),
+        title: d.seo.catTitle(loaderData.cat.name, humanLabel),
         description: d.seo.catDesc(
-          loaderData.name,
+          loaderData.cat.name,
           d.stages[age.stageId].label.toLowerCase(),
-          formatDate(loaderData.birthdate, locale),
+          formatDate(loaderData.cat.birthdate, locale),
           humanLabel,
         ),
         image,
@@ -48,7 +53,7 @@ export const Route = createFileRoute('/cats/$catSlug')({
 
 function CatDetail() {
   const i18n = useI18n()
-  const cat = Route.useLoaderData()
+  const { cat, budget } = Route.useLoaderData()
   const age = computeCatAge(cat.birthdate)
   const facts = i18n.factStats(age)
   const coatLabel =
@@ -181,7 +186,7 @@ function CatDetail() {
           </dl>
 
           <div className="mt-8 flex flex-wrap items-center gap-3">
-            <PurrButton slug={cat.slug} initial={cat.purrs} />
+            <PurrButton slug={cat.slug} initial={cat.purrs} budget={budget} />
             <button
               type="button"
               onClick={share}

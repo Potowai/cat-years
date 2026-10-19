@@ -81,6 +81,7 @@ export type Dict = {
     purrAria: string
     purrWord: string
     purrLimit: readonly string[]
+    purrRetryIn: (seconds: number) => string
     prevPhoto: string
     nextPhoto: string
     photoOf: (n: number, total: number) => string
@@ -339,6 +340,7 @@ const en: Dict = {
       "You've purred this cat into another dimension. Give it a minute to come back.",
       'Slow down, champion. Even professional purrers stop for a snack.',
     ],
+    purrRetryIn: (seconds) => `Try again in ${seconds}s`,
     prevPhoto: 'Previous photo',
     nextPhoto: 'Next photo',
     photoOf: (n, total) => `Photo ${n} of ${total}`,
@@ -699,6 +701,7 @@ const fr: Dict = {
       'Tu as ronronné ce chat dans une autre dimension. Laisse-lui une minute pour revenir.',
       'Tout doux, champion. Même les pros du ronron s’arrêtent pour une croquette.',
     ],
+    purrRetryIn: (seconds) => `Réessaie dans ${seconds} s`,
     prevPhoto: 'Photo précédente',
     nextPhoto: 'Photo suivante',
     photoOf: (n, total) => `Photo ${n} sur ${total}`,
