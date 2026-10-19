@@ -77,9 +77,15 @@ export const deleteCatFn = createServerFn({ method: 'POST' })
     return { ok: true }
   })
 
+/** Purrs are batched client-side, so one call may carry a burst of taps. */
+const purrSchema = z.object({
+  slug: z.string().min(1),
+  count: z.number().int().min(1).max(100).default(1),
+})
+
 export const purrCatFn = createServerFn({ method: 'POST' })
-  .validator(z.object({ slug: z.string().min(1) }))
+  .validator(purrSchema)
   .handler(async ({ data }) => {
     const ipHash = await ipHashFromRequest()
-    return repo.purrCat(data.slug, ipHash)
+    return repo.purrCat(data.slug, ipHash, data.count)
   })

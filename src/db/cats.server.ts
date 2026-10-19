@@ -18,7 +18,7 @@ const LIMITS = {
   perDay: Number(process.env.MAX_CATS_PER_DAY ?? 30),
   uploadsPer10min: Number(process.env.MAX_UPLOADS_PER_10MIN ?? 20),
   uploadsPerDay: Number(process.env.MAX_UPLOADS_PER_DAY ?? 120),
-  purrsPer10min: Number(process.env.MAX_PURRS_PER_10MIN ?? 40),
+  purrsPerMinute: Number(process.env.MAX_PURRS_PER_MIN ?? 100),
 }
 
 function toDTO(row: CatRow): CatDTO {
@@ -471,27 +471,25 @@ export async function deleteCat(input: {
   await removeBlobPhotos(owned)
 }
 
-export async function countRecentPurrsByIp(
-  ipHash: string,
-  windowMinutes: number,
-): Promise<number> {
-  const db = await getDb()
-  const since = new Date(Date.now() - windowMinutes * 60_000)
-  const rows = await db
-    .select({ count: sql<number>`count(*)::int` })
-    .from(purrs)
-    .where(and(eq(purrs.ipHash, ipHash), gt(purrs.createdAt, since)))
-  return rows[0]?.count ?? 0
-}
-
 /**
- * Records one purr per (cat, visitor). Repeat purrs from the same visitor are
- * idempotent, so the count cannot be inflated by reloading the page.
+ * Purring is unlimited but rate limited: a visitor gets `LIMITS.purrsPerMinute`
+ * purrs per cat per rolling minute, then has to wait it out. A burst that
+ * crosses the line still banks the purrs that fit and reports `limited`.
+ *
+ * One row per (cat, visitor) tracks what has been spent in the current window.
+ * `onConflictDoNothing` then `SELECT … FOR UPDATE` serialises concurrent clicks
+ * without a read-then-insert race.
  */
 export async function purrCat(
   slug: string,
   ipHash: string,
-): Promise<{ purrs: number; alreadyPurred: boolean }> {
+  amount = 1,
+): Promise<{
+  purrs: number
+  applied: number
+  limited: boolean
+  retryAfterMs: number
+}> {
   const db = await getDb()
   const found = await db
     .select({ id: cats.id, purrs: cats.purrs })
@@ -501,24 +499,58 @@ export async function purrCat(
   const cat = found[0]
   if (!cat) throw new Error(ERR.CAT_GONE)
 
-  const recent = await countRecentPurrsByIp(ipHash, 10)
-  if (recent >= LIMITS.purrsPer10min) throw new Error(ERR.RATE_LIMITED)
+  const n = Math.max(1, Math.floor(amount))
+  const limit = LIMITS.purrsPerMinute
+  const now = new Date()
 
-  const inserted = await db
-    .insert(purrs)
-    .values({ catId: cat.id, ipHash })
-    .onConflictDoNothing()
-    .returning({ catId: purrs.catId })
+  const result = await db.transaction(async (tx) => {
+    const where = and(eq(purrs.catId, cat.id), eq(purrs.ipHash, ipHash))
 
-  if (inserted.length === 0) {
-    return { purrs: cat.purrs, alreadyPurred: true }
+    // Make sure the row exists, then lock it. Doing it in this order means a
+    // concurrent first-ever purr waits here instead of racing the insert.
+    await tx
+      .insert(purrs)
+      .values({ catId: cat.id, ipHash, count: 0, windowStartedAt: now })
+      .onConflictDoNothing()
+
+    const [row] = await tx
+      .select({ count: purrs.count, windowStartedAt: purrs.windowStartedAt })
+      .from(purrs)
+      .where(where)
+      .for('update')
+    if (!row) return { applied: 0, purrs: cat.purrs, retryAfterMs: 0 }
+
+    const windowOpen = now.getTime() - row.windowStartedAt.getTime() < 60_000
+    const spent = windowOpen ? row.count : 0
+    const room = Math.min(n, Math.max(0, limit - spent))
+    const retryAfterMs = windowOpen
+      ? Math.max(0, row.windowStartedAt.getTime() + 60_000 - now.getTime())
+      : 60_000
+    if (room === 0) return { applied: 0, purrs: cat.purrs, retryAfterMs }
+
+    await tx
+      .update(purrs)
+      .set({
+        count: spent + room,
+        windowStartedAt: windowOpen ? row.windowStartedAt : now,
+      })
+      .where(where)
+
+    const rows = await tx
+      .update(cats)
+      .set({ purrs: sql`${cats.purrs} + ${room}` })
+      .where(eq(cats.id, cat.id))
+      .returning({ purrs: cats.purrs })
+
+    return {
+      applied: room,
+      purrs: rows[0]?.purrs ?? cat.purrs + room,
+      retryAfterMs: room < n ? retryAfterMs : 0,
+    }
+  })
+
+  return {
+    ...result,
+    limited: result.applied < n,
   }
-
-  const rows = await db
-    .update(cats)
-    .set({ purrs: sql`${cats.purrs} + 1` })
-    .where(eq(cats.id, cat.id))
-    .returning({ purrs: cats.purrs })
-
-  return { purrs: rows[0]?.purrs ?? cat.purrs + 1, alreadyPurred: false }
 }

@@ -73,6 +73,11 @@ export const photoUploads = pgTable(
  * purr count meaningful instead of trivially inflatable, and doubles as the
  * rate-limit record.
  */
+/**
+ * One row per visitor per cat. Purring is unlimited, so the row is a counter
+ * rather than a single event: `count` bounds how many purrs the visitor has
+ * spent in the current window, and `cats.purrs` keeps the public total.
+ */
 export const purrs = pgTable(
   'purrs',
   {
@@ -81,6 +86,11 @@ export const purrs = pgTable(
       .references(() => cats.id, { onDelete: 'cascade' }),
     ipHash: text('ip_hash').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    /** Purrs spent in the window that started at `windowStartedAt`. */
+    count: integer('count').notNull().default(0),
+    windowStartedAt: timestamp('window_started_at', { withTimezone: true })
       .notNull()
       .defaultNow(),
   },

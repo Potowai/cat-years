@@ -48,8 +48,12 @@ CREATE TABLE IF NOT EXISTS purrs (
   cat_id uuid NOT NULL REFERENCES cats (id) ON DELETE CASCADE,
   ip_hash text NOT NULL,
   created_at timestamptz NOT NULL DEFAULT now(),
+  count integer NOT NULL DEFAULT 0,
+  window_started_at timestamptz NOT NULL DEFAULT now(),
   PRIMARY KEY (cat_id, ip_hash)
 );
+ALTER TABLE purrs ADD COLUMN IF NOT EXISTS count integer NOT NULL DEFAULT 0;
+ALTER TABLE purrs ADD COLUMN IF NOT EXISTS window_started_at timestamptz NOT NULL DEFAULT now();
 CREATE INDEX IF NOT EXISTS purrs_created_at_idx ON purrs (created_at);
 `
 

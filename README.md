@@ -99,6 +99,7 @@ See `.env.example`. All are optional locally.
 | `DATABASE_URL`           | Postgres connection string (prod)          |
 | `BLOB_READ_WRITE_TOKEN`  | Vercel Blob token for photo uploads (prod)  |
 | `IP_SALT`                | Salt for hashed IPs used in rate limiting   |
+| `MAX_PURRS_PER_MIN`      | Purrs per visitor, per cat, per minute (100) |
 | `PGLITE_DIR`             | Where the local PGlite data lives (`.pglite`) |
 
 ## Scripts
